@@ -10,9 +10,11 @@
                             </v-col>
                             <v-col class="d-flex flex-column justify-space-between">
                                 <h2>{{ $t('name') }}: {{ identifier?.nome }}</h2>
-                                <h3>{{ $t('age') }}: {{ identifier?.age }}</h3>
-                                <h3>{{ $t('sns') }}: {{ identifier?.sns }}</h3>
-                                <h3>
+                                <h3 class="mt-3">{{ $t('age') }}: {{ identifier?.age }}</h3>
+                                <h3 class="mt-2">{{ $t('sns') }}: {{ identifier?.sns }}</h3>
+                                <h3 class="mt-2">{{ $t('Gender') }}: {{ identifier?.genero }}</h3>
+                                <h3 class="mt-2">{{ $t('Phone') }}: {{ identifier?.telefone }}</h3>
+                                <h3 class="mt-2">
                                     <v-btn color="blue" @click="edit(patient?.sns)">Edit</v-btn>
                                 </h3>
                             </v-col>
@@ -179,10 +181,13 @@ const identifier = computed(() => {
     if (!patient.value) {
         return [];
     }
+    console.log(patient.value);
     const data = {
         nome: patient.value.nome,
         age: differenceInYears(new Date(), new Date(patient.value.dataNascimento)),
-        sns: patient.value.sns
+        sns: patient.value.sns,
+        telefone: patient.value.telefone,
+        genero: patient.value.genero
     }
     return data;
 });
@@ -208,7 +213,7 @@ onMounted(async () => {
     //const intervalId = setInterval(fetchPatientData, 10000);
     //return () => clearInterval(intervalId);
     try {
-      const ws = new WebSocket('ws://' +  '127.0.0.1:8000' + '/ws/pacient/room123456789/')
+      const ws = new WebSocket('ws://' +  useLoaderStore().url + '/ws/pacient/room123456789/')
       ws.onopen = () => {
         console.log('Connected to the websocket server')
       }
@@ -364,7 +369,7 @@ const fetchNotifications = async () => {
             notificacoesData.value.push({
                 dispositivo: patient.value.dispositivos[parseInt(parts[0].split(':')[1])].modelo,
                 sinal: patient.value.dispositivos[parseInt(parts[0].split(':')[1])].sinaisVitais[parseInt(parts[1].split(':')[1])].tipo,
-                valor: patient.value.dispositivos[parseInt(parts[0].split(':')[1])].sinaisVitais[parseInt(parts[1].split(':')[1])].valores[parseInt(parts[2].split(':')[1])].valor,
+                valor: patient.value.dispositivos[parseInt(parts[0].split(':')[1])].sinaisVitais[parseInt(parts[1].split(':')[1])].valores[parseInt(parts[2].split(':')[1])] ? patient.value.dispositivos[parseInt(parts[0].split(':')[1])].sinaisVitais[parseInt(parts[1].split(':')[1])].valores[parseInt(parts[2].split(':')[1])].valor : 'No value',
                 read: notification.read
             });
         });

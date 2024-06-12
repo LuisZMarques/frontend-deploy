@@ -56,6 +56,8 @@ const pt ={
     'Permissions': 'Permissões',
     'Roles': 'Funções',
     'Close': 'Fechar',
+    'Phone': 'Telefone',
+    'Gender': 'Género',
 }
 
 export default pt;

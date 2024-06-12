@@ -28,21 +28,13 @@ import { useLoaderStore } from '@/stores/loader'
 const loaderStore = useLoaderStore();
 const { t } = useI18n();
 
-const url = 'backend-api-health-monitor.fly.dev'
-window.URL = 'https://' + url
-
-
-/* const url = '127.0.0.1:8000'
-window.URL = 'http://' + url
- */
-
 const user = JSON.parse(localStorage.getItem('user'))
 
 
 onMounted(() => {
   if (user) {
     try {
-      const ws = new WebSocket('ws://' + url + '/ws/notify/room' + user.user_id + '/')
+      const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/notify/room' + user.user_id + '/')
       ws.onopen = () => {
         console.log('Connected to the websocket server')
       }

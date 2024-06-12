@@ -56,6 +56,8 @@ const en = {
     'Permissions': 'Permissions',
     'Roles': 'Roles',
     'Close': 'Close',
+    'Phone': 'Phone',
+    'Gender': 'Gender'
 }
 
 

@@ -5,7 +5,7 @@
             <v-row no-gutters justify="center" class="mb-2">
                 <h3>{{ $t('PatientsListing') }}</h3>
             </v-row>
-            <v-data-table :headers="headers" :items="normalizedPatients" v-model:expanded="expanded" :mobile="smAndDown"
+            <v-data-table :headers="headers" :items="patients" v-model:expanded="expanded" :mobile="smAndDown"
                 item-value="sns">
                 <template v-slot:top>
                     <v-toolbar flat>
@@ -19,36 +19,41 @@
                     </v-toolbar>
                 </template>
                 <template v-slot:item.dispositivos="{ item }">
-                    <span v-for="(dispositivo, indexSinal) in item.dispositivos" :key="indexSinal">
-                        <v-chip v-for="(sinalVital, index) in dispositivo.sinaisVitais" :key="index" class="mr-2"
-                            @click="activate(item, indexSinal, index, loopAtivo)"
-                            :color="useLoaderStore().createData ? 'success' : 'primary'">
-                            <span v-if="sinalVital.tipo == 'Temperatura'">
-                                <img src="/temperatura.png" alt="" width="20px" height="20px">
-                            </span>
-                            <span v-else-if="sinalVital.tipo == 'Saturação Oxigênio'">
-                                <img src="/oxigenio.png" alt="" width="20px" height="20px">
-                            </span>
-                            <span v-else>
-                                <img src="/heart_beat.png" alt="" width="20px" height="20px">
-                            </span>
-
-                            <span v-if="useLoaderStore().createData">On</span><span v-else>Off</span>
-                        </v-chip>
-                    </span>
+                    <v-row v-for="(dispositivo, indexSinal) in item.dispositivos" :key="indexSinal">
+                        <v-col>
+                            <v-chip color="success" v-if="dispositivo.ativo">{{ dispositivo.modelo }}:
+                                On</v-chip><v-chip color="primary" v-else>{{ dispositivo.modelo }}: Off</v-chip>
+                        </v-col>
+                        <v-col>
+                            <v-chip v-for="(sinalVital, index) in dispositivo.sinaisVitais" :key="index" class="mr-2"
+                                :disabled="disabled" @click="activate(item, indexSinal, index, loopAtivo)"
+                                :color="sinalVital.ativo ? 'success' : 'primary'">
+                                <span v-if="sinalVital.tipo == 'Temperatura'">
+                                    <img src="/temperatura.png" alt="" width="20px" height="20px">
+                                </span>
+                                <span v-else-if="sinalVital.tipo == 'Saturação Oxigênio'">
+                                    <img src="/oxigenio.png" alt="" width="20px" height="20px">
+                                </span>
+                                <span v-else>
+                                    <img src="/heart_beat.png" alt="" width="20px" height="20px">
+                                </span>
+                                <span v-if="sinalVital.ativo">On</span><span v-else>Off</span>
+                            </v-chip>
+                        </v-col>
+                    </v-row>
                 </template>
                 <template v-slot:item.dataNascimento="{ item }">
                     {{ formatDate(item.dataNascimento) }}
                 </template>
                 <template v-slot:item.actions="{ item }">
-                    <v-icon @click="viewItem(item)" class="mr-10">mdi-eye</v-icon>
-                    <v-icon @click="editItem(item)">mdi-pencil</v-icon>
+                    <v-icon :disabled="disabled" @click="viewItem(item)" class="mr-10">mdi-eye</v-icon>
+                    <v-icon :disabled="disabled" @click="editItem(item)">mdi-pencil</v-icon>
                 </template>
             </v-data-table>
         </v-col>
         <!-- MOBILE -->
         <v-col v-else>
-            <v-card v-for="(patient, index) in normalizedPatients" :key="index" class="d-flex">
+            <v-card v-for="(patient, index) in patients" :key="index" class="d-flex">
                 <v-col cols="12">
                     <div v-for="(header, i) in headers" :key="i" class="d-flex">
                         <v-row no-gutters class="w-50">
@@ -58,7 +63,7 @@
                             <div v-if="header.key === 'dispositivos'">
                                 <span v-for="(dispositivo, indexSinal) in patient.dispositivos" :key="indexSinal">
                                     <v-chip v-for="(sinalVital, index) in dispositivo.sinaisVitais" :key="index"
-                                        @click="activate(item, indexSinal, index, loopAtivo)" class="mr-2"
+                                        :disabled="disabled" @click="activate(item, indexSinal, index, loopAtivo)" class="mr-2"
                                         :color="loopAtivo ? 'success' : 'primary'">
                                         <span v-if="sinalVital.tipo == 'Temperatura'">
                                             <img src="/temperatura.png" alt="" width="20px" height="20px">
@@ -79,8 +84,8 @@
                                 {{ formatDate(patient.dataNascimento) }}
                             </div>
                             <div v-else-if="header.key === 'actions'">
-                                <v-icon @click="viewItem(patient)" class="mr-10">mdi-eye</v-icon>
-                                <v-icon @click="editItem(patient)">mdi-pencil</v-icon>
+                                <v-icon :disabled="disabled" @click="viewItem(patient)" class="mr-10">mdi-eye</v-icon>
+                                <v-icon :disabled="disabled" @click="editItem(patient)">mdi-pencil</v-icon>
                             </div>
                             <div v-else>
                                 {{ patient[header.key] }}
@@ -90,32 +95,55 @@
                 </v-col>
             </v-card>
         </v-col>
-    </v-container> 
+
+    </v-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { differenceInYears } from 'date-fns';
 import { useRouter } from 'vue-router';
 import { useLoaderStore } from '@/stores/loader'
 import { useUsersStore } from '@/stores/users';
 import { useDisplay } from 'vuetify'
 const { smAndDown } = useDisplay()
+import { toast } from 'vue3-toastify';
 
 const user = useUsersStore().user
 
 const loaderStore = useLoaderStore();
 
-const createData = useLoaderStore().createData;
-
 const router = useRouter();
 
 const loopAtivo = ref(false);
 
+const expanded = ref([]);
+
+const patients = ref([])
+
+const disabled = ref(false);
+
 const activate = async (patient, indexSinal, index, loop) => {
-    useLoaderStore().toggleCreateData();
-    loopAtivo.value = !loop;
-    while (useLoaderStore().createData) {
+    patient.dispositivos[indexSinal].sinaisVitais[index].ativo = !patient.dispositivos[indexSinal].sinaisVitais[index].ativo;
+    patient.dispositivos[indexSinal].ativo = patient.dispositivos[indexSinal].sinaisVitais.some(sinal => sinal.ativo);
+    if (patient.dispositivos[indexSinal].sinaisVitais[index].ativo) {
+        toast.info('Data creation started');
+    } else {
+        disabled.value = true;
+        const response = await fetch(window.URL + `/documentos/atualizar_documento_por_sns/${patient.sns}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(patient),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to fetch data');
+        }
+        toast.success('Data creation stopped');
+        disabled.value = false;
+    }
+    while (patient.dispositivos[indexSinal].sinaisVitais[index].ativo) {
         patient.dispositivos[indexSinal].sinaisVitais[index].valores.push(
             {
                 "valor": Math.floor(Math.random() * (120 - 40 + 1) + 40),
@@ -127,7 +155,7 @@ const activate = async (patient, indexSinal, index, loop) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(patient),
-        });
+        });        
         sleep(1000);
     }
 }
@@ -140,13 +168,11 @@ const headers = ref([
     { title: 'Name', key: 'nome' },
     { title: 'SNS', key: 'sns' },
     { title: 'Age', key: 'dataNascimento' },
-    { title: 'Gender', key: 'genero' },
+    //{ title: 'Gender', key: 'genero' },
     { title: 'Phone', key: 'telefone' },
-    { title: 'Sinais Vitais', key: 'dispositivos' },
+    { title: 'Dispositivos', key: 'dispositivos' },
     { title: 'Actions', key: 'actions', sortable: false },
 ]);
-
-const normalizedPatients = ref([])
 
 onMounted(() => {
     fetchDataFromApi();
@@ -167,7 +193,7 @@ const fetchDataFromApi = async () => {
         }
         const data = await response.json();
         console.log('data:', data);
-        normalizedPatients.value = data;
+        patients.value = data;
 
     } catch (error) {
         console.error(error);

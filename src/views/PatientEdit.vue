@@ -21,7 +21,9 @@ import { toast } from 'vue3-toastify';
 
 const loaderStore = useLoaderStore();
 
-const patient = ref([])
+const patient = ref([
+  
+])
 
 const patientSns = useRoute().params.patientSns;
 

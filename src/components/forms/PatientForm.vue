@@ -42,7 +42,7 @@
                   </v-col>
                 </v-row>
                 <v-row justify="center" no-gutters v-if="patient.sns && patient.nome && patient.dataNascimento && patient.peso && patient.altura && patient.genero && patient.telefone">
-                  <v-btn @click="addDevice()" color="indigo-darken-3" :disabled="!isSnsFilled">
+                  <v-btn @click="addDevice(patient.dispositivos)" color="indigo-darken-3" :disabled="!isSnsFilled">
                     Adicionar Dispositivo
                   </v-btn>
                 </v-row>
@@ -160,7 +160,7 @@ const addDevice = (dispositivo) => {
     descricao: null,
     data_inicio: today(),
     data_fim: tomorrow(),
-    ativo: true,
+    ativo: false,
     sinaisVitais: []
   })
 }

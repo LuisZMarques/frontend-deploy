@@ -18,11 +18,11 @@
             @click:append-inner="toggleShowPassword"
           />
           <a href="" class="text-black">{{ $t('forgotPassword') }}</a>
-
           <v-btn class="mt-10 bg-deep-purple-darken-4 text-white" rounded="lg" size="x-large" @click="logIn">{{ $t('logIn') }}</v-btn>
         </div>
       </v-col>
     </v-row>
+    <b>Outro login: medico/medico123</b>    
   </v-container>
 </template>
 
