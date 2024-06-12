@@ -2,7 +2,7 @@
     <v-row>
       <v-col cols="12" class="d-flex flex-column align-center">
         <v-row class="d-flex my-2">
-          <h1 class="text-large font-weight-bold text-deep-purple-darken-4">Create a 'Patient' (dinamico)</h1>
+          <div class="text-h4 font-weight-bold text-deep-purple-darken-4">Create a 'Patient' (dinamico)</div>
         </v-row>
         <v-col>
             <v-text-field label="First Name" placeholder="John" color="primary"/>

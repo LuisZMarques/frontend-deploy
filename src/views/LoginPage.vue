@@ -1,30 +1,25 @@
 <template>
   <v-container>
     <v-row>
-      <v-col cols="6" class="d-flex flex-column align-center">
+      <v-col cols="12" class="d-flex flex-column align-center">
         <div class="d-flex mt-10">
-          <h1 class="text-large font-weight-bold text-deep-purple-darken-4">Log in</h1>
+          <div class="text-h4 font-weight-bold text-deep-purple-darken-4">{{ $t('Welcome') }}</div>
         </div>
         <div class="d-flex flex-column login-inputs mt-10 align-center">
-          <v-text-field label="Email" placeholder="example@mail.com" color="primary" class="w-100"/>
+          <v-text-field label="username" placeholder="username" v-model="username" color="primary" class="w-100"/>
           <v-text-field 
             label="Password" 
             :placeholder="$t('enterPassword')" 
             class="mt-10 w-100"
             :type="passwordType"
             color="primary"
+            v-model="password"
             :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             @click:append-inner="toggleShowPassword"
           />
           <a href="" class="text-black">{{ $t('forgotPassword') }}</a>
 
           <v-btn class="mt-10 bg-deep-purple-darken-4 text-white" rounded="lg" size="x-large" @click="logIn">{{ $t('logIn') }}</v-btn>
-        </div>
-      </v-col>
-      <v-col cols="6" class="d-flex justify-center">
-        <div>
-          img
-          <!-- <img src="../../public/smart-watch-tracker-for-seniors-front-page.jpg" alt="homePageImage"> -->
         </div>
       </v-col>
     </v-row>
@@ -35,11 +30,17 @@
 import { ref } from 'vue'
 import { useUsersStore } from '@/stores/users'
 import { useRouter } from 'vue-router';
+import { jwtDecode } from "jwt-decode";
+import { toast } from 'vue3-toastify';
+
 
 const router = useRouter();
 const usersStore = useUsersStore()
 const showPassword = ref(false);
 const passwordType = ref('password');
+
+const username = ref('admin');
+const password = ref('admin123');
 
 const toggleShowPassword = () => {
   showPassword.value = !showPassword.value
@@ -50,25 +51,34 @@ const toggleShowPassword = () => {
   }
 }
 
-const logIn = () => {
-  console.log("usersStore.user: ", usersStore.user)
-  usersStore.user =  {
-      id: "1",
-      nome: "José da Silva",
-      funcao: "Médico",
-      contato: "1234567890",
-      endereco: "Rua dos Bobos, 0",
-      createdAt: "2020-01-01T00:00:00Z",
-      updatedAt: "2020-01-01T00:00:00Z",
+const logIn = async () => {
+  const response = await fetch(window.URL + '/api/token/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      username: username.value,
+      password: password.value
+    })
+  })
+  if(response.status !== 200){
+    console.log("Error: ", response)
+    toast.error("Invalid username or password")
+    return
+  }else{
+    const data = await response.json()
+    const decodeData = jwtDecode(data.access)
+    usersStore.logIn(decodeData)
+    usersStore.isAdmin ? router.push({name: 'HomeAdmin'}) :  router.push({name: 'HomeUser'})
   }
-  usersStore.isLogged = true
-  router.push({name: 'home'})
+  
 }
 
 </script>
 
 <style scoped>
-  .text-large{
+  .text-h4{
     font-size: 3rem;
   }
 

@@ -3,18 +3,34 @@ import { defineStore } from 'pinia'
 
 export const useUsersStore = defineStore('users', () => {
     const user = ref(null)
-
-    // const user = ref({
-    //     id: "1",
-    //     nome: "José da Silva",
-    //     funcao: "Médico",
-    //     contato: "1234567890",
-    //     endereco: "Rua dos Bobos, 0",
-    //     createdAt: "2020-01-01T00:00:00Z",
-    //     updatedAt: "2020-01-01T00:00:00Z",
-    // }) //para testes
-
+    const token = ref(null)
+    const refreshToken = ref(null)
     const isLogged = ref(!!user.value);
+    const isAdmin = ref(false)
 
-    return { user, isLogged }
+    const loopAtivo = ref(false);
+
+    const logOut = () => {
+        user.value = null
+        token.value = null
+        refreshToken.value = null
+        isLogged.value = false
+        localStorage.removeItem('user')
+    }
+
+    const logIn = (userData) => {
+        console.log(userData.groups.includes('admin'))
+        user.value = userData
+        token.value = userData.token
+        refreshToken.value = userData.refreshToken
+        isLogged.value = true
+        isAdmin.value = userData.groups.includes('admin') ? true : false
+        localStorage.setItem('user', JSON.stringify(userData))
+    }
+
+    if (localStorage.getItem('user')) {
+        logIn(JSON.parse(localStorage.getItem('user')))
+    }   
+
+    return { user, isLogged, logOut, logIn, isAdmin, loopAtivo}
 })

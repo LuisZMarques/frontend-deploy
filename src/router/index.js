@@ -1,27 +1,45 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUsersStore } from '@/stores/users'
-import LandingPage from '@/views/LandingPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import CreatePatient from '@/views/CreatePatient.vue'
 import PatientProfile from '@/views/PatientProfile.vue'
 import PatientsListing from '@/views/PatientsListing.vue'
 import EmployeesListing from '@/views/EmployeesListing.vue'
 import PatientEdit from '@/views/PatientEdit.vue'
-
-
+import CreateUser from '@/views/CreateUser.vue'
+import EditUser from '@/views/EditUser.vue'
+import LandingPageAdmin from '@/views/LandingPageAdmin.vue'
+import LandingPageUser from '@/views/LandingPageUser.vue'
+import RolesAndPermissions from '@/views/RolesAndPermissions.vue'
+import RolesAndPermissionsEdit from '@/views/RolesAndPermissionsEdit.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'Home',
-      component: LandingPage
+      name: 'HomeUser',
+      component: LandingPageUser
+    },
+    {
+      path: '/',
+      name: 'HomeAdmin',
+      component: LandingPageAdmin
     },
     {
       path: '/login',
       name: 'login',
       component: LoginPage
+    },
+    {
+      path: '/create-user',
+      name: 'CreateUser',
+      component: CreateUser
+    },
+    {
+      path: '/user/:id/edit',
+      name: 'EditUser',
+      component: EditUser
     },
     {
       path: '/create-patient',
@@ -47,19 +65,34 @@ const router = createRouter({
       path: '/patients',
       name: 'PatientsListing',
       component: PatientsListing
+    },
+    {
+      path: '/roles-and-permissions',
+      name: 'RolesAndPermissions',
+      component: RolesAndPermissions
+    },
+    {
+      path: '/roles-and-permissions/:id/edit',
+      name: 'RolesAndPermissionsEdit',
+      component: RolesAndPermissionsEdit
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
 })
 
-// router.beforeEach((to, from, next) => {
-//   const usersStore = useUsersStore() 
-//   const isLogged = usersStore.isLogged
-//   console.log("usersStore.isLogged: ", usersStore.isLogged)
-//   if (!isLogged && to.path !== '/login') {
-//     next('/login')
-//   } else {
-//     next()
-//   }
-// })
+router.beforeEach((to, from, next) => {
+  const usersStore = useUsersStore()
+  const isLogged = usersStore.isLogged
+  if (!isLogged && to.path !== '/login') {
+    next('/login')
+  } else if (isLogged && to.path === '/login') {
+    next('/')
+  } else {
+    next()
+  }
+})
 
 export default router

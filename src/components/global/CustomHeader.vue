@@ -6,7 +6,7 @@
          </v-btn>
 
          <v-col class="d-flex justify-center">
-            <span class="text-indigo-accent-4 header-text">Health Monitor</span>
+            <span class="text-indigo-accent-4 header-text">{{ $t('HealthMonitor') }}</span>
          </v-col>
       </v-row>
    </v-app-bar>
@@ -34,7 +34,7 @@ const layoutStore = useLayoutStore()
 
 @media screen and (max-width: 40rem) {
    .header-text{
-      font-size: 2rem;
+      visibility: hidden;
    }
 }
 </style>

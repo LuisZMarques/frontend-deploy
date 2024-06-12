@@ -1,28 +1,26 @@
 <template>
   <v-container>
-    <div v-if="showSuccess" class="success-message">
-      Success! Data updated successfully.
-    </div>
-    <div v-if="showErrors" class="error-message">
-      Error! Data was not updated. Please try again.
-    </div>
-    <v-row class="d-flex my-2">
-      <h1 class="text-large font-weight-bold text-deep-purple-darken-4">Edit a 'Patient' (dinamico)</h1>
+    <v-row class="d-flex my-2 justify-center" v-if="patient.sns">
+      <div class="text-h4 font-weight-bold text-deep-purple-darken-4">Edit Patient {{ patient.nome }} ( {{ patient.sns }} )</div>
     </v-row>
-    <PatientForm v-if="patient.sns" :patient="patient"></PatientForm>
-    <span v-else>loading</span>
-    <v-btn @click="atualizarPaciente" color="indigo-darken-3">Save</v-btn>
+    <PatientForm  :patient="patient"></PatientForm>
+    <v-row class="d-flex my-2 justify-center">
+      <v-btn @click="atualizarPaciente" color="indigo-darken-3">Save</v-btn>
+    </v-row>
   </v-container>
-  {{ patient }}
+
 </template>
 
 <script setup>
 import PatientForm from '@/components/forms/PatientForm.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router';
+import { useLoaderStore } from '@/stores/loader'
+import { useUsersStore } from '@/stores/users';
+import { toast } from 'vue3-toastify';
 
-const showSuccess = ref(false)
-const showErrors = ref(false)
+const loaderStore = useLoaderStore();
+
 const patient = ref([])
 
 const patientSns = useRoute().params.patientSns;
@@ -30,18 +28,24 @@ const patientSns = useRoute().params.patientSns;
 
 // get patient data from api
 const fetchPatientData = async () => {
+  loaderStore.setLoading(true);
   try {
-    const response = await fetch('http://127.0.0.1:8000/documentos/buscar_por_sns/' + patientSns + '/');
+    const response = await fetch(window.URL + '/documentos/buscar_por_sns/' + patientSns + '/');
     if (!response.ok) {
       throw new Error('Failed to fetch data');
     }
     const patientData = await response.json();
-    patient.value = patientData;
-
-
+    patient.value = {
+      ...patientData, 
+      dataNascimento: patientData.dataNascimento.split('T')[0],
+      dispositivos: patientData.dispositivos.map(dispositivo => {
+        return {...dispositivo, data_inicio: dispositivo.data_inicio.split('T')[0], data_fim: dispositivo.data_fim.split('T')[0]}
+      })
+    };
   } catch (error) {
     console.error(error);
   }
+  loaderStore.setLoading(false);
 };
 
 onMounted(() => {
@@ -49,8 +53,9 @@ onMounted(() => {
 });
 
 const atualizarPaciente = async () => {
+  loaderStore.setLoading(true);
   try {
-    const response = await fetch('http://127.0.0.1:8000/documentos/atualizar_documento_por_sns/' + patientSns + '/', {
+    const response = await fetch(window.URL + '/documentos/atualizar_documento_por_sns/' + patientSns + '/', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -60,31 +65,11 @@ const atualizarPaciente = async () => {
     if (!response.ok) {
       throw new Error('Failed to update data');
     }
-    showSuccess.value = true;
-    showErrors.value = false;
+    toast.success('Success! Data updated successfully.', { position: 'bottom-right'});
   } catch (error) {
     console.error(error);
-    showSuccess.value = false;
-    showErrors.value = true;
+    toast.error('Error! Data was not updated. Please try again.');
   }
+  loaderStore.setLoading(false);
 }
 </script>
-<style>
-.success-message {
-  background-color: #dff0d8;
-  color: #3c763d;
-  padding: 10px;
-  border: 1px solid #d6e9c6;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-
-.error-message {
-  background-color: #f2dede;
-  color: #a94442;
-  padding: 10px;
-  border: 1px solid #ebccd1;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-</style>

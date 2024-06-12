@@ -6,7 +6,7 @@
                     <v-card-text>
                         <v-row>
                             <v-col class="d-flex justify-center">
-                                <img src="../../public/userAnoon.png" width="120px" alt="userStockPhoto">
+                                <img src="/userAnoon.png" width="120px" alt="userStockPhoto">
                             </v-col>
                             <v-col class="d-flex flex-column justify-space-between">
                                 <h2>{{ $t('name') }}: {{ identifier?.nome }}</h2>
@@ -140,6 +140,10 @@ import {
     Legend
 } from 'chart.js'
 
+import { useLoaderStore } from '@/stores/loader'
+
+const loaderStore = useLoaderStore();
+
 ChartJS.register(CategoryScale,
     LinearScale,
     PointElement,
@@ -201,15 +205,30 @@ const decicesList = computed(() => {
 onMounted(async () => {
     await fetchPatientData();
     await fetchNotifications();
-    const intervalId = setInterval(fetchPatientData, 10000);
-    return () => clearInterval(intervalId);
+    //const intervalId = setInterval(fetchPatientData, 10000);
+    //return () => clearInterval(intervalId);
+    try {
+      const ws = new WebSocket('ws://' +  '127.0.0.1:8000' + '/ws/pacient/room123456789/')
+      ws.onopen = () => {
+        console.log('Connected to the websocket server')
+      }
+      ws.onmessage = (event) => {
+        fetchPatientData();
+        fetchNotifications();
+      }
+    }
+    catch (error) {
+      console.error('Error:', error);
+    }
 });
 
 
 // get patient data from api
 const fetchPatientData = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/documentos/buscar_por_sns/' + patientSns + '/');
+        loaderStore.setLoading(true);
+
+        const response = await fetch(window.URL + '/documentos/buscar_por_sns/' + patientSns + '/');
         if (!response.ok) {
             throw new Error('Failed to fetch data');
         }
@@ -217,6 +236,8 @@ const fetchPatientData = async () => {
     } catch (error) {
         console.error(error);
     }
+    loaderStore.setLoading(false);
+
 };
 
 
@@ -328,7 +349,7 @@ const dataTeste = ref([]);
 
 const fetchNotifications = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/listar_notificacoes/' + patientSns + '/');
+        const response = await fetch(window.URL + '/listar_notificacoes/' + patientSns + '/');
         if (!response.ok) {
             throw new Error('Failed to fetch data');
         }
@@ -393,7 +414,7 @@ const read = async (id) => {
     const data = dataTeste.value.find(notification => notification._id === id)
     console.log(dataTeste.value.find(notification => notification._id === id)._id);
     try {
-        const response = await fetch('http://127.0.0.1:8000/update_notificacao/' + data._id + '/', {
+        const response = await fetch(window.URL + '/update_notificacao/' + data._id + '/', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

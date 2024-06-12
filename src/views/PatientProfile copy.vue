@@ -106,13 +106,20 @@ import {
     Legend
 } from 'chart.js'
 
+import { useLoaderStore } from '@/stores/loader'
+
+const loaderStore = useLoaderStore();
+
 ChartJS.register(CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
     Title,
     Tooltip,
-    Legend)
+    Legend
+)
+
+
 
 const tab = ref(null);
 

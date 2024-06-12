@@ -1,29 +1,35 @@
 <template>
   <v-container>
     <div v-if="showSuccess" class="success-message">
-      Success! Your action was completed.
+      {{ $t('SuccessYourActionWasCompleted') }}
     </div>
     <div v-if="showErrors" class="error-message">
-      Error! Your action was not completed.
+      {{ $t('ErrorYourActionWasNotCompleted') }}
+
     </div>
-    <v-row class="d-flex my-2">
-      <h1 class="text-large font-weight-bold text-deep-purple-darken-4">Create a 'Patient' (dinamico)</h1>
+    <v-row class="d-flex my-2 justify-center" no-gutters>
+      <div class="text-h4 font-weight-bold text-deep-purple-darken-4">{{ $t('CreatePatient') }}</div>
     </v-row>
-    <PatientForm :patient="patient"></PatientForm>
-    <v-btn @click="criarPaciente" color="indigo-darken-3">Save</v-btn>
+    <PatientForm :patient="patient" ref="form" @validationChanged="updateButtonState"></PatientForm>
+    <v-row class="d-flex my-2 justify-center">
+      <v-btn :disabled="!isFormValid" @click="criarPaciente" color="indigo-darken-3">Save</v-btn>
+    </v-row>
   </v-container>
 </template>
 
 <script setup>
 import PatientForm from '@/components/forms/PatientForm.vue'
+import router from '@/router';
 import { ref, computed, watch } from 'vue'
+import { useLoaderStore } from '@/stores/loader'
+import { toast } from 'vue3-toastify';
+import { format } from 'date-fns';
 
-/* lógica para create/edit e tipo de user
-    -campos preenchidos para edit
-    -submit para diferentes tipos de endpoints consoante o tipo de user.
-*/
+const loaderStore = useLoaderStore();
+
 const showSuccess = ref(false)
 const showErrors = ref(false)
+
 const patient = ref({
   sns: null,
   nome: null,
@@ -31,12 +37,59 @@ const patient = ref({
   genero: null,
   peso: null,
   altura: null,
+  telefone: null,
   dispositivos: [
   ]
 })
+
+watch(patient.value, (newPatient) => {
+  if (validateSns(newPatient.sns)) {
+    findPatient(newPatient.sns)
+  }
+})
+
+const snsRules = [
+  v => !!v || 'SNS number is required',
+  v => /^\d{9}$/.test(v) || 'SNS number must have exactly 9 digits',
+  v => /^\d+$/.test(v) || 'SNS number must contain only numbers'
+]
+
+const validateSns = (sns) => {
+  const errors = snsRules.map(rule => rule(sns)).filter(result => result !== true);
+  return errors.length === 0
+}
+
+// find patient by sns
+const findPatient = async (sns) => {
+  try {
+    loaderStore.setLoading(true);
+    const response = await fetch(window.URL + '/documentos/buscar_por_sns/' + sns + '/');
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    if (data.sns) {
+      router.push({ name: 'PatientEdit', params: { patientSns: sns } })
+      patient.value = formatData(data)
+    }
+  } catch (error) {
+    console.error('There was a problem with the fetch operation:', error);
+  }
+  loaderStore.setLoading(false);
+}
+
+const form = ref(null)
+
+const isFormValid = ref(false)
+
+const updateButtonState = (isValid) => {
+  isFormValid.value = isValid
+}
+
 const criarPaciente = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/pacients/', {
+    loaderStore.setLoading(true);
+    const response = await fetch(window.URL + '/documentos/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -50,39 +103,41 @@ const criarPaciente = async () => {
     const data = await response.json();
     // response 200 OK
     if (response.status === 200) {
-      showSuccess.value = true
+      toast.success('Patient created successfully')
+      router.push({ name: 'PatientsListing' })
     } else {
-      showSuccess.value = false
-      console.log("data: ", data)
+      toast.error('Error creating patient')
     }
-    console.log("data: ", data)
   } catch (error) {
-    console.error('There was a problem with the fetch operation:', error);
+    toast.error('Error creating patient')
   }
+  loaderStore.setLoading(false);
 }
+
+const formattedDate = (date) => format(date, 'dd-MM-yyyy')
 
 const formatData = (data) => {
   const devices = [];
   if (data) {
-    if (data.dispositivosData) {
-      for (const device of data.dispositivosData) {
+    if (data.dispositivos) {
+      for (const device of data.dispositivos) {
         const sinaisVitais = [];
-        for (const vital of device.dispositivoPatientSinalVitalData) {
+        for (const vital of device.sinaisVitais) {
           sinaisVitais.push({
-            tipo: vital.sinalVitalData.tipo,
-            unidade: vital.sinalVitalData.unidade,
+            tipo: vital.tipo,
+            unidade: vital.unidade,
             maximo: vital.maximo,
             minimo: vital.minimo,
             valores: []
           })
         }
         devices.push({
-          fabricante: device.dispositivoData.fabricante,
-          modelo: device.dispositivoData.modelo,
-          numeroSerie: device.dispositivoData.numeroSerie,
-          descricao: device.dispositivoData.descricao,
-          data_inicio: device.data_inicio,
-          data_fim: device.data_fim,
+          fabricante: device.fabricante,
+          modelo: device.modelo,
+          numeroSerie: device.numeroSerie,
+          descricao: device.descricao,
+          data_inicio: formattedDate(device.data_inicio),
+          data_fim: formattedDate(device.data_fim),
           ativo: device.ativo,
           sinaisVitais: [
             ...sinaisVitais
@@ -91,71 +146,20 @@ const formatData = (data) => {
       }
     }
   }
+  console.log("devices: ", devices)
   return {
     sns: data.sns,
     nome: data.nome,
-    dataNascimento: data.dataNascimento,
+    dataNascimento: formattedDate(data.dataNascimento),
     genero: data.genero,
     peso: data.peso,
     altura: data.altura,
+    telefone: data.telefone,
     dispositivos: [
       ...devices
     ]
   }
 };
 
-const patientId = computed(() => {
-  return patient.value.sns;
-});
 
-watch(patientId, () => {
-  fetchPatientData();
-});
-
-// get patient data from api
-const fetchPatientData = async () => {
-  try {
-    const response = await fetch(`http://127.0.0.1:8000/api/pacients/?sns=`+patientId.value);
-    if (!response.ok) {
-      throw new Error('Failed to fetch data');
-    }
-    const patientData = await response.json();
-    if (patientData.patients.length == 0) {
-      return patient.value = {
-        sns: patientId.value,
-        nome: null,
-        dataNascimento: null,
-        genero: null,
-        peso: null,
-        altura: null,
-        dispositivos: [
-        ]
-      };
-    }else{
-      return patient.value = formatData(patientData.patients[0]);
-    }
-
-  } catch (error) {
-    console.error(error);
-  }
-};
 </script>
-<style>
-.success-message {
-  background-color: #dff0d8;
-  color: #3c763d;
-  padding: 10px;
-  border: 1px solid #d6e9c6;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-
-.error-message {
-  background-color: #f2dede;
-  color: #a94442;
-  padding: 10px;
-  border: 1px solid #ebccd1;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-</style>
