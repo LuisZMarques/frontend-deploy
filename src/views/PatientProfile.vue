@@ -213,7 +213,7 @@ onMounted(async () => {
     //const intervalId = setInterval(fetchPatientData, 10000);
     //return () => clearInterval(intervalId);
     try {
-      const ws = new WebSocket('ws://' +  useLoaderStore().url + '/ws/pacient/room123456789/')
+      const ws = new WebSocket('wss://' +  useLoaderStore().url + '/ws/pacient/room123456789/')
       ws.onopen = () => {
         console.log('Connected to the websocket server')
       }
