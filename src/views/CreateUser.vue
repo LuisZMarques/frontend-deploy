@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-row class="d-flex my-2 justify-center">
-      <div class="text-h4 font-weight-bold text-deep-purple-darken-4">{{ $t('CreateUser') }}</div>
+      <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">{{ $t('CreateUser') }}</div>
     </v-row>
     <v-form v-model="isFormValid" @input="validationStatus">
       <v-row>

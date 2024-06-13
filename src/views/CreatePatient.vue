@@ -8,7 +8,7 @@
 
     </div>
     <v-row class="d-flex my-2 justify-center" no-gutters>
-      <div class="text-h4 font-weight-bold text-deep-purple-darken-4">{{ $t('CreatePatient') }}</div>
+      <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">{{ $t('CreatePatient') }}</div>
     </v-row>
     <PatientForm :patient="patient" ref="form" @validationChanged="updateButtonState"></PatientForm>
     <v-row class="d-flex my-2 justify-center">
@@ -42,9 +42,14 @@ const patient = ref({
   ]
 })
 
-watch(patient.value, (newPatient) => {
-  if (validateSns(newPatient.sns)) {
-    findPatient(newPatient.sns)
+const patientId = computed(() => {
+  return patient.value.sns;
+});
+
+watch(patientId, (newSns) => {
+  console.log("entrou")
+  if (validateSns(newSns)) {
+    findPatient(newSns)
   }
 })
 

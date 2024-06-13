@@ -15,7 +15,7 @@
             </v-tab>
           </template>
       </v-tabs>
-      <v-card-text class="">
+      <v-card-text>
           <v-window v-model="tab">
               <v-window-item value="patient">
                 <v-row>
@@ -97,6 +97,11 @@
           </v-window>
       </v-card-text>
     </v-form>
+    <!-- <v-date-picker
+      v-model="datePickerValue"
+      v-if="showDatePicker"
+      width="320"
+    ></v-date-picker> -->
   </v-card>
 </template>
 
@@ -122,6 +127,17 @@ const tab = ref('patient')
 
 const indexDispositivo = ref('')
 
+// const showDatePicker = ref(false)
+// const datePickerValue = ref(null)
+
+// const openDatePicker = (value) => {
+//   console.log('entrou')
+//   console.log("value: ", value)
+//   datePickerValue.value = value;
+//   console.log("datePickerValue.value: ", datePickerValue.value)
+
+//   showDatePicker.value = true;
+// }
 
 watch(tab, (changedTab) => {
   indexDispositivo.value = changedTab

@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-row class="d-flex my-2 justify-center" v-if="patient.sns">
-      <div class="text-h4 font-weight-bold text-deep-purple-darken-4">Edit Patient {{ patient.nome }} ( {{ patient.sns }} )</div>
+      <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">Edit Patient {{ patient.nome }} ( {{ patient.sns }} )</div>
     </v-row>
     <PatientForm  :patient="patient"></PatientForm>
     <v-row class="d-flex my-2 justify-center">

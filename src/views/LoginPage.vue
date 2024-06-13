@@ -3,7 +3,7 @@
     <v-row>
       <v-col cols="12" class="d-flex flex-column align-center">
         <div class="d-flex mt-10">
-          <div class="text-h4 font-weight-bold text-deep-purple-darken-4">{{ $t('Welcome') }}</div>
+          <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">{{ $t('Welcome') }}</div>
         </div>
         <div class="d-flex flex-column login-inputs mt-10 align-center">
           <v-text-field label="username" placeholder="username" v-model="username" color="primary" class="w-100"/>
@@ -78,7 +78,7 @@ const logIn = async () => {
 </script>
 
 <style scoped>
-  .text-h4{
+  .text-h4 text-center{
     font-size: 3rem;
   }
 

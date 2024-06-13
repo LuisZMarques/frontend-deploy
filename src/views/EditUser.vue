@@ -9,7 +9,7 @@
     </div>
     <v-row class="d-flex my-2 justify-center">
       <v-col cols="12" sm="8">
-        <div class="text-h4 font-weight-bold text-deep-purple-darken-4">{{ $t('EditUser') }}</div>
+        <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">{{ $t('EditUser') }}</div>
       </v-col>
       <v-col cols="12" sm="4"><v-btn @click="usersList">{{ $t('UsersListing') }}</v-btn></v-col>
 

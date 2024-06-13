@@ -15,7 +15,6 @@
                         <v-btn class="mb-2" color="primary" dark to="/create-patient">
                             {{ $t('CreatePatient') }}
                         </v-btn>
-
                     </v-toolbar>
                 </template>
                 <template v-slot:item.dispositivos="{ item }">
@@ -53,18 +52,25 @@
         </v-col>
         <!-- MOBILE -->
         <v-col v-else>
-            <v-card v-for="(patient, index) in patients" :key="index" class="d-flex">
+            <v-row no-gutters justify="center" class="mb-2">
+                <div class="text-h4 text-center text-center">{{ $t('PatientsListing') }}</div>
+                <v-btn class="mb-2" color="primary" dark to="/create-patient">
+                    {{ $t('CreatePatient') }}
+                </v-btn>
+            </v-row>
+            <v-card v-for="(patient, index) in patients" :key="index" class="d-flex my-2">
                 <v-col cols="12">
-                    <div v-for="(header, i) in headers" :key="i" class="d-flex">
+                    <div v-for="(header, i) in headers" :key="i" class="d-flex mb-2">
                         <v-row no-gutters class="w-50">
-                            {{ header.title }}
+                            <span class="font-weight-bold">{{ header.title }}</span>
                         </v-row>
-                        <v-row no-gutters class="w-50">
+                        <v-row no-gutters class="w-50 justify-center">
                             <div v-if="header.key === 'dispositivos'">
-                                <span v-for="(dispositivo, indexSinal) in patient.dispositivos" :key="indexSinal">
+                                <div v-for="(dispositivo, indexSinal) in patient.dispositivos" :key="indexSinal" class="d-flex flex-column my-1 pa-2 mobile-item-border align-center">
+                                    <span class="font-weight-bold"> {{ dispositivo.modelo }} </span>
                                     <v-chip v-for="(sinalVital, index) in dispositivo.sinaisVitais" :key="index"
-                                        :disabled="disabled" @click="activate(item, indexSinal, index, loopAtivo)" class="mr-2"
-                                        :color="loopAtivo ? 'success' : 'primary'">
+                                        :disabled="disabled" @click="activate(patient, indexSinal, index, loopAtivo)" class="ma-2"
+                                        :color="sinalVital.ativo ? 'success' : 'primary'">
                                         <span v-if="sinalVital.tipo == 'Temperatura'">
                                             <img src="/temperatura.png" alt="" width="20px" height="20px">
                                         </span>
@@ -75,15 +81,15 @@
                                             <img src="/heart_beat.png" alt="" width="20px" height="20px">
                                         </span>
                                         <span>
-                                            On/Off: <span v-if="loopAtivo">On</span><span v-else>Off</span>
+                                           <span v-if="sinalVital.ativo">On</span><span v-else>Off</span>
                                         </span>
                                     </v-chip>
-                                </span>
+                                </div>
                             </div>
                             <div v-else-if="header.key === 'dataNascimento'">
                                 {{ formatDate(patient.dataNascimento) }}
                             </div>
-                            <div v-else-if="header.key === 'actions'">
+                            <div v-else-if="header.key === 'actions'" class="d-flex w-100 justify-space-evenly pa-3 mobile-item-border">
                                 <v-icon :disabled="disabled" @click="viewItem(patient)" class="mr-10">mdi-eye</v-icon>
                                 <v-icon :disabled="disabled" @click="editItem(patient)">mdi-pencil</v-icon>
                             </div>
@@ -124,6 +130,7 @@ const patients = ref([])
 const disabled = ref(false);
 
 const activate = async (patient, indexSinal, index, loop) => {
+    console.log("entrei")
     patient.dispositivos[indexSinal].sinaisVitais[index].ativo = !patient.dispositivos[indexSinal].sinaisVitais[index].ativo;
     patient.dispositivos[indexSinal].ativo = patient.dispositivos[indexSinal].sinaisVitais.some(sinal => sinal.ativo);
     if (patient.dispositivos[indexSinal].sinaisVitais[index].ativo) {
@@ -211,3 +218,12 @@ const editItem = (item) => {
     router.push({ name: 'PatientEdit', params: { patientSns: item.sns } });
 }
 </script>
+
+<style scoped>
+
+.mobile-item-border{
+    border: 1px solid lightblue;
+    border-radius: 10px;
+}
+
+</style>
