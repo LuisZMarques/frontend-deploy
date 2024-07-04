@@ -5,36 +5,37 @@
     </v-row>
     <v-form v-model="isFormValid" @input="validationStatus">
       <v-row>
-        <v-col cols="12" sm="4">
-          <v-text-field v-model="user.first_name" label="First Name" required></v-text-field>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-text-field v-model="user.last_name" label="Last Name" required></v-text-field>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-text-field v-model="user.email" label="Email" required></v-text-field>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12" sm="4">
-          <v-text-field v-model="user.username" label="Username" required></v-text-field>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-text-field v-model="user.password" label="Password" required></v-text-field>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-select v-model="user.role" :items="roles" label="Role" required></v-select>
-        </v-col>
-      </v-row>
-      <v-row>
         <v-col cols="12" sm="6">
-          <v-checkbox v-model="user.is_active" label="Is Active"></v-checkbox>
+          <v-text-field v-model="user.full_name" label="Name" :rules="full_name_rules" required></v-text-field>
         </v-col>
         <v-col cols="12" sm="6">
-          <v-checkbox v-model="user.is_staff" label="Is Staff"></v-checkbox>
+          <v-text-field v-model="user.email" label="Email" :rules="email_rules" required></v-text-field>
         </v-col>
+        <!-- <v-col cols="12" sm="4">
+          <v-text-field v-model="user.password" label="Password" :rules="password_rules" required></v-text-field>
+        </v-col> -->
       </v-row>
+      <v-row>
+        <v-col cols="12" sm="3" v-if="user.type_user == 'paciente'">
+          <v-text-field v-model="user.health_number" label="Health number" :rules="health_number_rules" required></v-text-field>
+        </v-col>
+        <v-col cols="12" sm="3" v-if="user.type_user != 'paciente'">
+          <v-text-field v-model="user.taxpayer_number" label="Taxpayer number"  :rules="taxpayer_number" required></v-text-field>
+        </v-col>
+        <v-col cols="12" sm="3">
+          <v-text-field v-model="user.mobile_phone" label="Mobile phone" :rules="mobile_phone_rules" required></v-text-field>
+        </v-col>
+        <v-col cols="12" sm="3" v-if="isAdmin">
+          <v-select v-model="user.type_user" :items="typeUser" label="Type user" :rules="type_user_rules" required></v-select>
+        </v-col>
 
+        <v-col cols="12" sm="3" v-if="isAdmin">
+          <v-select v-model="user.role" :items="roles" label="Role" :rules="role_rules" required></v-select>
+        </v-col>
+        <v-col v-if="user.role == 'add new role'">
+          <v-text-field v-model="new_role" label="New role"></v-text-field>
+        </v-col>
+      </v-row>
     </v-form>
     <v-row class="d-flex my-2 justify-center">
       <v-btn :disabled="!isFormValid" @click="criarUser" color="indigo-darken-3">Save</v-btn>
@@ -46,33 +47,40 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLoaderStore } from '@/stores/loader'
+import { useUsersStore } from '@/stores/users'
 import { toast } from 'vue3-toastify';
 import { useRouter } from 'vue-router';
 const loaderStore = useLoaderStore();
 
-const showSuccess = ref(false)
-const showErrors = ref(false)
-
 const user = ref({
-  first_name: '',
-  last_name: '',
+  full_name: '',
   email: '',
-  username: '',
-  password: '',
+  password: 'test',
+  health_number: 0,
+  taxpayer_number: 0,
+  mobile_phone: '',
+  type_user: '',
+  role: '',
   is_active: true,
   is_staff: false
 })
 
 const roles = ref([])
 
-const form = ref(null)
-
+const new_role = ref('')
 
 const router = useRouter()
 
 const isFormValid = ref(false)
 
 const validationStatus = ref(false)
+
+const isAdmin = computed(() => {
+  return useUsersStore().user?.groups.includes('admin') ? true : false
+});
+
+
+const typeUser = ref(['profissional', 'paciente', 'admin'])
 
 onMounted(() => {
   getRoles()
@@ -87,9 +95,10 @@ const getRoles = async () => {
         }
         const data = await response.json()
         data.forEach(role => {
+          //push role to the start
           roles.value.push(role.name)
         })
-        console.log(data)
+        roles.value.push('add new role')
     } catch (error) {
         console.error(error)
     }
@@ -97,8 +106,13 @@ const getRoles = async () => {
 }
 
 const criarUser = async () => {
+  console.log(user.value)
+  //return
   try {
-    const response = await fetch(window.URL + '/api/register_user/', {
+    if (user.value.role == 'add new role') {
+      user.value.role = new_role.value
+    }
+    const response = await fetch(window.URL + '/api/users/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,4 +130,46 @@ const criarUser = async () => {
     toast.error('Error creating user')
   }
 }
+
+// validation rules
+
+const full_name_rules = [
+  v => !!v || 'Name is required',
+  v => (v && v.length <= 50) || 'Name must be less than 50 characters',
+]
+
+const email_rules = [
+  v => !!v || 'Email is required',
+  v => /.+@.+\..+/.test(v) || 'E-mail must be valid',
+]
+
+// const password_rules = [
+//   v => !!v || 'Password is required',
+//   v => (v && v.length >= 8) || 'Password must be at least 8 characters',
+// ]
+
+const health_number_rules = [
+  v => !!v || 'Health number is required',
+  v => (v && v.length <= 9) || 'Health number must be less than 9 characters',
+]
+
+const taxpayer_number = [
+  v => !!v || 'Taxpayer number is required',
+  v => (v && v.length <= 9) || 'Taxpayer number must be less than 9 characters',
+]
+
+const mobile_phone_rules = [
+  v => !!v || 'Mobile phone is required',
+  v => (v && v.length <= 9) || 'Mobile phone must be less than 9 characters',
+]
+
+const type_user_rules = [
+  v => !!v || 'Type user is required',
+]
+
+const role_rules = [
+  v => !!v || 'Role is required',
+]
+
+
 </script>

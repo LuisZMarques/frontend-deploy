@@ -11,7 +11,7 @@
         </v-row>
         <v-row>
             <v-col cols="12">
-                <v-data-table :headers="headers" :items="roles" :search="search" :items-per-page="5"
+                <v-data-table :headers="headersRoles" :items="roles" :search="search" :items-per-page="5"
                     class="elevation-1">
                     <template v-slot:item.actions="{ item }">
                         <v-icon small @click="editRole(item.id)">mdi-pencil</v-icon>
@@ -31,12 +31,12 @@ const loaderStore = useLoaderStore();
 
 const router = useRouter()
 
-const headers = [
+const headersRoles = ref([
     { text: 'ID', value: 'id' },
     { text: 'Name', value: 'name' },
     { text: 'Permissions', value: 'permissions.name' },
     { text: 'Actions', value: 'actions', sortable: false },
-]
+])
 
 const search = ref('')
 
@@ -51,7 +51,7 @@ const getRoles = async () => {
         }
         const data = await response.json()
         roles.value = data
-        console.log(data)
+        console.log('roles.value: ', roles.value)
     } catch (error) {
         console.error(error)
     }

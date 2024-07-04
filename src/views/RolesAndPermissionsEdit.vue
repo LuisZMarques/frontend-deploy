@@ -201,7 +201,6 @@ const getPermissions = async () => {
         }
         const data = await response.json()
         permissions.value = data
-        console.log(data)
     } catch (error) {
         console.error(error)
     }

@@ -10,9 +10,10 @@
     <v-row class="d-flex my-2 justify-center" no-gutters>
       <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">{{ $t('CreatePatient') }}</div>
     </v-row>
-    <PatientForm :patient="patient" ref="form" @validationChanged="updateButtonState"></PatientForm>
-    <v-row class="d-flex my-2 justify-center">
-      <v-btn :disabled="!isFormValid" @click="criarPaciente" color="indigo-darken-3">Save</v-btn>
+    <PatientForm :patient="patient" ref="form" @validationChanged="updateButtonState" @areAllFieldsNonEmpty="areAllFieldsNonEmpty"></PatientForm>
+    <v-row class="d-flex my-2 justify-space-around">
+      <v-btn @click="voltar()" color="blue-darken-3">Return</v-btn>
+      <v-btn :disabled="!isFormValid || !isValid" @click="criarPaciente" color="indigo-darken-3">Save</v-btn>
     </v-row>
   </v-container>
 </template>
@@ -42,12 +43,17 @@ const patient = ref({
   ]
 })
 
+const isValid = ref(false);
+
+const areAllFieldsNonEmpty = (data) => {
+  isValid.value = data; 
+}
+
 const patientId = computed(() => {
   return patient.value.sns;
 });
 
 watch(patientId, (newSns) => {
-  console.log("entrou")
   if (validateSns(newSns)) {
     findPatient(newSns)
   }
@@ -59,6 +65,10 @@ const snsRules = [
   v => /^\d+$/.test(v) || 'SNS number must contain only numbers'
 ]
 
+const voltar = () => {
+  router.push({ name: 'PatientsListing' })
+}
+
 const validateSns = (sns) => {
   const errors = snsRules.map(rule => rule(sns)).filter(result => result !== true);
   return errors.length === 0
@@ -68,7 +78,7 @@ const validateSns = (sns) => {
 const findPatient = async (sns) => {
   try {
     loaderStore.setLoading(true);
-    const response = await fetch(window.URL + '/documentos/buscar_por_sns/' + sns + '/');
+    const response = await fetch(window.URL + '/api/documentos/buscar_por_sns/' + sns + '/');
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -94,7 +104,7 @@ const updateButtonState = (isValid) => {
 const criarPaciente = async () => {
   try {
     loaderStore.setLoading(true);
-    const response = await fetch(window.URL + '/documentos/', {
+    const response = await fetch(window.URL + '/api/documentos/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -107,7 +117,7 @@ const criarPaciente = async () => {
     }
     const data = await response.json();
     // response 200 OK
-    if (response.status === 200) {
+    if (response.status === 201) {
       toast.success('Patient created successfully')
       router.push({ name: 'PatientsListing' })
     } else {
@@ -151,7 +161,6 @@ const formatData = (data) => {
       }
     }
   }
-  console.log("devices: ", devices)
   return {
     sns: data.sns,
     nome: data.nome,

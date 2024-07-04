@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUsersStore } from '@/stores/users'
 import LoginPage from '@/views/LoginPage.vue'
+import PasswordRecovery from '@/views/PasswordRecovery.vue'
 import CreatePatient from '@/views/CreatePatient.vue'
 import PatientProfile from '@/views/PatientProfile.vue'
 import PatientsListing from '@/views/PatientsListing.vue'
@@ -22,7 +23,7 @@ const router = createRouter({
       component: LandingPageUser
     },
     {
-      path: '/',
+      path: '/admin',
       name: 'HomeAdmin',
       component: LandingPageAdmin
     },
@@ -57,7 +58,7 @@ const router = createRouter({
       component: PatientEdit
     },
     {
-      path: '/employees',
+      path: '/usersList',
       name: 'EmployeesListing',
       component: EmployeesListing
     },
@@ -79,14 +80,19 @@ const router = createRouter({
     {
       path: '/:pathMatch(.*)*',
       redirect: '/'
-    }
+    },
+    {
+      path: '/password-recovery',
+      name: 'PasswordRecovery',
+      component: PasswordRecovery
+    },
   ]
 })
 
 router.beforeEach((to, from, next) => {
   const usersStore = useUsersStore()
   const isLogged = usersStore.isLogged
-  if (!isLogged && to.path !== '/login') {
+  if (!isLogged && to.path !== '/login' && to.path !== '/password-recovery') {
     next('/login')
   } else if (isLogged && to.path === '/login') {
     next('/')

@@ -1,28 +1,26 @@
 <template>
   <v-container>
     <v-row>
-      <v-col cols="12" class="d-flex flex-column align-center">
+      <v-col cols="6" offset="3" class="d-flex flex-column align-center">
         <div class="d-flex mt-10">
-          <div class="text-h4 text-center font-weight-bold text-deep-purple-darken-4">{{ $t('Welcome') }}</div>
+          <div class="text-h4 text-center font-weight-bold" style="color: #006400;">{{ $t('Welcome') }}</div>
         </div>
-        <div class="d-flex flex-column login-inputs mt-10 align-center">
-          <v-text-field label="username" placeholder="username" v-model="username" color="primary" class="w-100"/>
-          <v-text-field 
-            label="Password" 
-            :placeholder="$t('enterPassword')" 
-            class="mt-10 w-100"
-            :type="passwordType"
-            color="primary"
-            v-model="password"
-            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            @click:append-inner="toggleShowPassword"
-          />
-          <a href="" class="text-black">{{ $t('forgotPassword') }}</a>
-          <v-btn class="mt-10 bg-deep-purple-darken-4 text-white" rounded="lg" size="x-large" @click="logIn">{{ $t('logIn') }}</v-btn>
+        <div class="d-flex flex-column login-inputs mt-10 align-center"
+          style="background-color: #E0E0E0;box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5); border-radius: 10px; padding: 20px;">
+          <v-text-field label="Email" placeholder="email" v-model="email" color="primary" class="w-100" />
+          <v-text-field :label="$t('Password')" :placeholder="$t('enterPassword')" class="mt-10 w-100" :type="passwordType"
+            color="primary" v-model="password" :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append-inner="toggleShowPassword" />
+          <span class="text-black cursor-pointer" @click="recoverPassword">{{ $t('forgotPassword') }}</span>
+          <v-btn class="mt-10" style="color: #006400;" rounded="lg" size="x-large" @click="logIn"><v-icon class="mr-2">mdi-login</v-icon>{{
+            $t('logIn') }}</v-btn>
         </div>
       </v-col>
     </v-row>
-    <b>Outro login: medico/medico123</b>    
+    <p>Login:</p>
+    <p> - medico@gmail.com/medico123</p>
+    <p> - admin@gmail.com/admin123</p>
+    <p> - paciente@gmail.com/paciente123</p>
   </v-container>
 </template>
 
@@ -39,14 +37,14 @@ const usersStore = useUsersStore()
 const showPassword = ref(false);
 const passwordType = ref('password');
 
-const username = ref('admin');
+const email = ref('admin@gmail.com');
 const password = ref('admin123');
 
 const toggleShowPassword = () => {
   showPassword.value = !showPassword.value
-  if(showPassword.value){
+  if (showPassword.value) {
     passwordType.value = 'text';
-  }else{
+  } else {
     passwordType.value = 'password';
   }
 }
@@ -58,31 +56,36 @@ const logIn = async () => {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      username: username.value,
+      email: email.value,
       password: password.value
     })
   })
-  if(response.status !== 200){
+  if (response.status !== 200) {
     console.log("Error: ", response)
-    toast.error("Invalid username or password")
+    toast.error("Invalid email or password")
     return
-  }else{
+  } else {
     const data = await response.json()
     const decodeData = jwtDecode(data.access)
+    console.log("decodeData: ", decodeData)
     usersStore.logIn(decodeData)
-    usersStore.isAdmin ? router.push({name: 'HomeAdmin'}) :  router.push({name: 'HomeUser'})
+    console.log(usersStore.user)
+    usersStore.isAdmin ? router.push({ name: 'HomeAdmin' }) :
+      usersStore.isPatient ? router.push({ name: 'PatientProfile', params: { 'patientSns': usersStore.user.health_number[0] } }) : router.push({ name: 'HomeUser' })
   }
-  
 }
 
+const recoverPassword = () => {
+  router.push({ name: 'PasswordRecovery' });
+}
 </script>
 
 <style scoped>
-  .text-h4 text-center{
-    font-size: 3rem;
-  }
+.text-h4 text-center {
+  font-size: 3rem;
+}
 
-  .login-inputs{
-    width: 75%;
-  }
+.login-inputs {
+  width: 75%;
+}
 </style>

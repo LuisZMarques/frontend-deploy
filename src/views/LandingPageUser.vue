@@ -7,14 +7,14 @@
     </v-row>
     <v-row>
       <v-col cols="12" sm="4">
-        <v-card color="#B49239" theme="dark" class="rounded-xl" height="150">
+        <v-card color="#B49239" theme="dark" class="rounded-xl" height="150" @click="goToPacientsLits">
           <div class="d-flex flex-no-wrap justify-space-between">
             <div>
               <v-card-title class="text-h5 mt-10">
                 {{ $t('pacients') }}
               </v-card-title>
 
-              <v-card-subtitle>{{ patients.length }}</v-card-subtitle>
+              <v-card-subtitle>{{ usePatientsStore().patients.length }}</v-card-subtitle>
             </div>
             <v-img src="patient.png" class="mr-4 mt-5" width="100" height="100" absolute></v-img>
           </div>
@@ -29,11 +29,11 @@
               </v-card-title>
 
               <v-card-subtitle>
-                Total: {{ devives?.length }} <br>
-                Activos:{{ countDevicesActives }}
+                Total: {{ usePatientsStore().devices?.length }} <br>
+                Activos: {{ usePatientsStore().devicesActive?.length }}
               </v-card-subtitle>
             </div>
-            <v-img src="device.png" class="mr-4 mt-5" width="100" height="100" absolute></v-img>
+            <v-img src="smartwatch.png" class="mr-4 mt-5" width="100" height="100" absolute></v-img>
           </div>
         </v-card>
       </v-col>
@@ -45,144 +45,156 @@
                 {{ $t('sinalVital') }}
               </v-card-title>
               <v-card-subtitle>
-                Total: {{ vitalSigns?.length }} <br>
-                {{ $t('notifications') }}: {{ valueNotRead }}
+                Total: {{ usePatientsStore().vitalSigns?.length }} <br>
+                Activos: {{ usePatientsStore().vitalSignActive?.length }}
               </v-card-subtitle>
             </div>
-            <v-img src="sinalVital.png" class="mr-4 mt-5" width="100" height="100" absolute></v-img>
+            <v-img src="pulse.png" class="mr-4 mt-5" width="100" height="100" absolute></v-img>
           </div>
         </v-card>
       </v-col>
     </v-row>
-    <v-row style="margin-top: 50px;">
-      <v-col cols="12">
-        <v-card class="mx-auto">
-          <v-card-item class="border-md border-info">
-            <h3>{{ $t('notifications') }}</h3>
-            <!-- <template v-slot:subtitle> Últimas notificações não lidos {{ valueNotRead }} </template> -->
-          </v-card-item>
-          <v-card-text class="py-0 mt-n4">
-            <v-row align="center" no-gutters>
-              <v-col class="" cols="12">
-                <v-list>
-                  <v-list-item v-for="paciente in dadosPacientes" :key="paciente.title" :title="paciente.nome"
-                    :subtitle="paciente.sns">
-                    {{ paciente.dispositivo }} - {{ paciente.sinalVital }} - {{ paciente.valor }}
-                  </v-list-item>
-                </v-list>
-              </v-col>
-            </v-row>
-          </v-card-text>
+
+    <v-row>
+      <v-col v-for="data in patientsWithDevicesActives" v-if="patientsWithDevicesActives.length > 0" cols="12" sm="4">
+        <v-card class="rounded-xl" height="300" style="padding: 16px;">
+          <Line id="id_w" :data="data" :options="chartOptions" />
+        </v-card>
+      </v-col>
+      <v-col cols="6" v-else>
+        <v-card color="#425C5A" theme="dark" class="rounded-xl" height="150">
+          <div class="d-flex flex-no-wrap justify-space-between">
+            <div>
+              <v-card-title class="text-h5 mt-10">
+                {{ $t('No active devices') }}
+              </v-card-title>
+            </div>
+          </div>
         </v-card>
       </v-col>
     </v-row>
   </v-container>
+
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useLoaderStore } from '@/stores/loader'
 import { useUsersStore } from '@/stores/users';
+import { usePatientsStore } from '@/stores/patients';
+import { Line } from 'vue-chartjs';
+import { useRouter } from 'vue-router';
+import {
+  Chart as ChartJS, CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
 
+ChartJS.register(CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend)
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  responsive: true,
+  scales: {
+    y: {
+      beginAtZero: true
+    }
+  }
+};
 const user = useUsersStore().user
+
+const router = useRouter();
 
 const loaderStore = useLoaderStore();
 
 onMounted(() => {
-  fetchDataFromApi();
+  if (usePatientsStore().patients.length === 0)
+    usePatientsStore().fetchPatients(user.user_id);
+
+  usePatientsStore().getAllAtiveDevicesAndVitalSigns();
+
+  usePatientsStore().patients.forEach((patient) => {
+    connectToWebSocket(patient);
+  });
 });
 
-const patients = ref([]);
+const connectToWebSocket = (patient) => {
+  try {
+    const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patient.sns + '/');
+    ws.onopen = () => {
+      console.log('Connected to the websocket server')
+    }
+    ws.onmessage = (event) => {
+      fetchDatabySns(patient.sns);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
 
-const fetchDataFromApi = async () => {
+const patientsWithDevicesActives = computed(() => {
+  const dataForGraph = [];
+  usePatientsStore().devicesActive.forEach((dispositivo) => {
+    if (dispositivo.ativo) {
+      dispositivo.sinaisVitais.forEach((sinalVital) => {
+        if (sinalVital.ativo === false) {
+          return;
+        }
+        dataForGraph.push({
+          labels: sinalVital.valores.slice(-30).map(entry => new Date(entry.data).toLocaleTimeString()),
+          datasets: [
+            {
+              label: sinalVital.tipo,
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1,
+              data: sinalVital.valores.slice(-30).map(entry => entry.valor)
+            }
+          ]
+        });
+      });
+    }
+  });
+  return dataForGraph
+});
+
+const goToPacientsLits = () => {
+  router.push({ name: 'PatientsListing' });
+}
+
+const fetchDatabySns = async (sns) => {
   try {
     loaderStore.setLoading(true);
-    const response = await fetch(window.URL + '/api/patients/listar_documentos_com_profissionais/' + user.user_id + '/');
+    const response = await fetch(window.URL + '/api/documentos/buscar_por_sns/' + sns + '/');
     if (!response.ok) {
       throw new Error('Failed to fetch data');
     }
     const data = await response.json();
 
-    patients.value = data;
+    const patient = usePatientsStore().patients.find(patient => patient.sns === sns);
+
+    const index = usePatientsStore().patients.indexOf(patient);
+
+    usePatientsStore().patients[index] = data;
+
+    console.log(data);
 
   } catch (error) {
     console.error(error);
   }
   loaderStore.setLoading(false);
 };
-
-const devives = computed(() => {
-  const dispositivos = ref([]);
-  patients.value.forEach((patient) => {
-    patient.dispositivos.forEach((dispositivo) => {
-      if (!dispositivos.value.includes(dispositivo)) {
-        dispositivos.value.push(dispositivo);
-      }
-    });
-  });
-  return dispositivos.value;
-});
-
-const vitalSigns = computed(() => {
-  const sinaisVitais = ref([]);
-  patients.value.forEach((patient) => {
-    patient.dispositivos.forEach((dispositivo) => {
-      dispositivo.sinaisVitais.forEach((sinalVital) => {
-        sinalVital.valores.forEach((valor) => {
-          if (!sinaisVitais.value.includes(valor)) {
-            sinaisVitais.value.push(valor);
-          }
-        });
-      });
-    });
-  });
-  return sinaisVitais.value;
-});
-const dadosPacientes = ref([]);
-const valueNotRead = computed(() => {
-  let count = 0;
-  patients.value.forEach((patient) => {
-    patient.dispositivos.forEach((dispositivo) => {
-      dispositivo.sinaisVitais.forEach((sinalVital) => {
-        sinalVital.valores.forEach((valor) => {
-          if (valor.alerta === true) {
-            dadosPacientes.value.push({
-              nome: patient.nome,
-              sns: patient.sns,
-              dispositivo: dispositivo.modelo,
-              sinalVital: sinalVital.tipo,
-              valor: valor.valor,
-              data: valor.data,
-
-            });
-            count++;
-          }
-        });
-      });
-    });
-  });
-  // os 5 mais recentes por data from dadosPacientes
-  dadosPacientes.value.sort((a, b) => {
-    return new Date(b.data) - new Date(a.data);
-  });
-  dadosPacientes.value = dadosPacientes.value.slice(0, 5);
-
-  console.log('patients:', dadosPacientes);
-  return count;
-});
-
-// count all devices actives
-const countDevicesActives = computed(() => {
-  let count = 0;
-  patients.value.forEach((patient) => {
-    patient.dispositivos.forEach((dispositivo) => {
-      if (dispositivo.ativo) {
-        count++;
-      }
-    });
-  });
-  return count;
-});
 
 
 
