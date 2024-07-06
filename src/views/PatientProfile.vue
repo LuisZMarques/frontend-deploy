@@ -323,7 +323,7 @@ const patient = computed(() => {
 
 onMounted(() => {
     try {
-        const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+        const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
         ws.onopen = () => {
             console.log('Connected to the websocket server')
         }

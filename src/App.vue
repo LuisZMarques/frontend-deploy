@@ -38,7 +38,7 @@ const user = JSON.parse(localStorage.getItem('user'))
 onMounted(() => {
   if (user) {
     try {
-      const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/notify/room' + user.user_id + '/')
+      const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/notify/room' + user.user_id + '/')
       ws.onopen = () => {
         console.log('Connected to the websocket server')
       }
