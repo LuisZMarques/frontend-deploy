@@ -322,7 +322,7 @@ const patient = computed(() => {
     data?.dispositivos.forEach((device, deviceIdx) => {
         device.sinaisVitais.forEach((sinal, sinalIdx) => {
             const dataTo = "_sns_" + patientSns + "_device_" + device.numeroSerie + "_sinal_" + sinalIdx;
-                wsArray.push(new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/'));
+                wsArray.push(new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/'));
         })
     })
 
@@ -349,7 +349,7 @@ onMounted(() => {
     if (usePatientsStore().patients.length == 0)
         usePatientsStore().fetchPatients(useUsersStore().user.user_id);
 
-    const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+    const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
     ws.onopen = () => {
         console.log('Connected to the websocket server')
     }
@@ -368,7 +368,7 @@ onMounted(() => {
         /*
         patient.value.dispositivos.forEach(device => {
             device.sinaisVitais.forEach((sinal, index) => {
-                wsArray.push(new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/sns-' + patientSns + '/device-' + device.numeroSerie + '-sinal-' + index + '/'));
+                wsArray.push(new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/sns-' + patientSns + '/device-' + device.numeroSerie + '-sinal-' + index + '/'));
                 wsArray[wsArray.length - 1].onopen = () => {
                     console.log('Connected to the websocket server')
                 }
@@ -379,7 +379,7 @@ onMounted(() => {
             });
         });
        
-        const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+        const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
         ws.onopen = () => {
             console.log('Connected to the websocket server')
         }
