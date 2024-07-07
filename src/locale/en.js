@@ -109,6 +109,15 @@ const en = {
     'Turn On': 'Turn On',
     'Edit': 'Edit',
     'Call': 'Call',
+    'Email': 'Email',
+    'Notification read': 'Notification read',
+    'Patient updated successfully': 'Patient updated successfully',
+    'Username or password is invalid!': 'Username or password is invalid!',
+    'Patient must have at least one device': 'Patient must have at least one device',
+    'dashboard': 'Dashboard',
+    'AddPatient': 'Add Patient',
+    'Data creation started': 'Data creation started',
+    'Search for users': 'Search for users',
     
 }
 

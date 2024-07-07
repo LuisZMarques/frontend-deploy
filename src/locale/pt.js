@@ -111,6 +111,15 @@ const pt = {
   'Turn Off': 'Desligar',
   'Edit': 'Editar',
   'Call': 'Chamar',
+  'Email': 'Email',
+  'Notification read': 'Notificação lida',
+  'Patient updated successfully': 'Paciente atualizado com sucesso',
+  'Username or password is invalid!': 'Nome de utilizador ou palavra-passe inválidos!',
+  'Patient must have at least one device': 'O paciente deve ter pelo menos um dispositivo',
+  'dashboard': 'Painel de principal',
+  'AddPatient': 'Adicionar Paciente',
+  'Data creation started': 'Criação de dados iniciada',
+  'Search for users': 'Procurar por utilizadores',
 }
 
 export default pt

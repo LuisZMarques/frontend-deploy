@@ -54,6 +54,7 @@
                     <v-tabs v-model="tab">
                         <v-tab value="devices" class="tab-border mr-1">
                             <span class="text-blue">
+                                <v-icon>mdi-devices</v-icon>
                                 {{ $t('Devices of the patient') }}
                             </span>
                         </v-tab>
@@ -299,7 +300,7 @@ const chartOptions = {
 };
 
 const getStartValue = () => {
-    return useVitalSignsStore().start.find(value => value.patient === patient.value.sns) ?? false;
+    return useVitalSignsStore().start?.find(value => value.patient === patient.value.sns) ?? false;
 };
 
 const router = useRouter();
@@ -313,8 +314,31 @@ const patientSns = useRoute().params.patientSns;
 const patient = computed(() => {
     if (usePatientsStore().patients.length === 0)
         usePatientsStore().fetchPatients(useUsersStore().user.user_id);
-    //useNotificationsStore().fetchNotifications(patientSns);
+
+      
     const data = usePatientsStore().patients.find(patient => patient.sns == patientSns)
+      /*
+    const wsArray = [];
+    data?.dispositivos.forEach((device, deviceIdx) => {
+        device.sinaisVitais.forEach((sinal, sinalIdx) => {
+            const dataTo = "_sns_" + patientSns + "_device_" + device.numeroSerie + "_sinal_" + sinalIdx;
+                wsArray.push(new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/'));
+        })
+    })
+
+    wsArray.forEach(ws => {
+        ws.onopen = () => {
+            console.log('Connected to the websocket server')
+        }
+        ws.onmessage = (event) => {
+            console.log('Received data from the websocket server')
+            // fetchPatientData();
+            // fetchNotifications();
+        }
+    })
+        */
+    
+
 
     return data;
 });
@@ -322,15 +346,48 @@ const patient = computed(() => {
 
 
 onMounted(() => {
+    if (usePatientsStore().patients.length == 0)
+        usePatientsStore().fetchPatients(useUsersStore().user.user_id);
+
+    const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+    ws.onopen = () => {
+        console.log('Connected to the websocket server')
+    }
+    ws.onmessage = (event) => {
+        console.log('Received data from the websocket server', event.data)
+        usePatientsStore().fetchPatients(useUsersStore().user.user_id);
+        // fetchPatientData();
+        // fetchNotifications();
+    }
+
+
+    useNotificationsStore().fetchNotifications(patientSns);
+    const wsArray = [];
+
     try {
-        const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+        /*
+        patient.value.dispositivos.forEach(device => {
+            device.sinaisVitais.forEach((sinal, index) => {
+                wsArray.push(new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/sns-' + patientSns + '/device-' + device.numeroSerie + '-sinal-' + index + '/'));
+                wsArray[wsArray.length - 1].onopen = () => {
+                    console.log('Connected to the websocket server')
+                }
+                wsArray[wsArray.length - 1].onmessage = (event) => {
+                    fetchPatientData();
+                    //fetchNotifications();
+                }
+            });
+        });
+       
+        const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
         ws.onopen = () => {
             console.log('Connected to the websocket server')
         }
         ws.onmessage = (event) => {
+            console.log('Received data from the websocket server', event.data)
             // fetchPatientData();
             // fetchNotifications();
-        }
+        } */
     }
     catch (error) {
         console.error('Error:', error);
@@ -535,26 +592,8 @@ const historyNotifications = computed(() => {
         });
 });
 
-const read = async (id) => {
-    const data = useNotificationsStore().notificationsNotRead.find(notification => notification._id === id)
-    try {
-        const response = await fetch(window.URL + '/api/update_notificacao/' + data._id + '/', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-
-        });
-        if (!response.ok) {
-            throw new Error('Failed to fetch data');
-        }
-        else {
-            toast.success('Notification read');
-        }
-    } catch (error) {
-        console.error(error);
-    }
+const read = (_id) => {
+    useNotificationsStore().markAsRead(_id);
 };
 
 const deleteSinal = async (sinal_idx, dispositivo_idx) => {

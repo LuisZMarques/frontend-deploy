@@ -131,7 +131,7 @@ onMounted(() => {
 
 const connectToWebSocket = (patient) => {
   try {
-    const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patient.sns + '/');
+    const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patient.sns + '/');
     ws.onopen = () => {
       console.log('Connected to the websocket server')
     }
