@@ -82,8 +82,10 @@ export const useVitalSignsStore = defineStore('vitalSigns', () => {
 
   const startGenerateData = (patient, indexSinal, index) => {
     const readingFrequency = patient.dispositivos[indexSinal].sinaisVitais[index].readingFrequency
+    // activate device
+    patient.dispositivos[indexSinal].ativo = true
     toast.success('Data creation started')
-    if (getintervalId(patient.sns, indexSinal, index).valor === 0) {
+    if (getintervalId(patient.sns, indexSinal, index) && getintervalId(patient.sns, indexSinal, index).valor === 0) {
       getintervalId(patient.sns, indexSinal, index).valor = setInterval(async () => {
         await ativarSinal(patient, indexSinal, index)
       }, readingFrequency * 1000)
@@ -91,6 +93,7 @@ export const useVitalSignsStore = defineStore('vitalSigns', () => {
   }
 
   const stopGeneratingData = async (patient, indexSinal, index) => {
+    patient.dispositivos[indexSinal].ativo = false
     if (getintervalId(patient.sns, indexSinal, index).valor !== 0) {
       clearInterval(getintervalId(patient.sns, indexSinal, index).valor)
       await desativarSinal(patient, indexSinal, index)

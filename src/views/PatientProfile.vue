@@ -15,9 +15,9 @@
                                 <div class="d-flex justify-space-between align-center pa-1">
                                     <span class="text-h6 font-weight-bold">{{ $t('name') }}: {{ identifier?.nome
                                         }}</span>
-                                    <v-btn color="red" size="small" width="100px" @click="callPatient"><v-icon
-                                            class="mr-2">mdi-phone-plus</v-icon>{{
-                                                $t("Call") }}</v-btn>
+                                    <v-btn v-if="!isPatient" color="red" size="small" width="100px"
+                                        @click="callPatient"><v-icon class="mr-2">mdi-phone-plus</v-icon>{{
+                                            $t("Call") }}</v-btn>
                                 </div>
                                 <div class="mt-2">
                                     <span class="text-h6 font-weight-bold">{{ $t('age') }}: </span>
@@ -43,6 +43,9 @@
                                     <v-btn color="green" size="small" width="100px" class="mt-2"
                                         @click="edit(patient?.sns)"><v-icon class="mr-2">mdi-pencil</v-icon>{{
                                             $t("Edit") }}</v-btn>
+                                    <v-btn color="red" size="small" width="100px" class="mt-2"
+                                        @click="deletePatient(patient?.sns)"><v-icon class="mr-2">mdi-trash-can</v-icon>{{
+                                            $t("Delete") }}</v-btn>
                                 </v-row>
                             </v-col>
                         </v-row>
@@ -65,7 +68,7 @@
                         </v-tab>
                         <v-tab value="estatistics" class="tab-border mr-1">
                             <span class="text-blue">
-                                {{ $t('Statistics') }}
+                                {{ $t('Active Charts') }}
                             </span>
                         </v-tab>
                         <v-tab value="notifications" class="tab-border">
@@ -75,7 +78,12 @@
                         </v-tab>
                         <v-tab value="history" class="tab-border">
                             <span class="text-blue">
-                                {{ $t('History') }}
+                                {{ $t('Notifications History') }}
+                            </span>
+                        </v-tab>
+                        <v-tab value="historyValues" class="tab-border">
+                            <span class="text-blue">
+                                {{ $t('Values History') }}
                             </span>
                         </v-tab>
                     </v-tabs>
@@ -85,10 +93,9 @@
                                 <v-row no-gutters>
                                     <v-col v-for="(device, index) in decicesList" :key="index" cols="12" sm="3">
                                         <v-sheet class="ma-2">
-                                            <v-card
-                                                :class="getStartValue().start ? 'bg-red-accent-1' : 'bg-blue-accent-1'">
+                                            <v-card :class="device.ativo ? 'bg-red-accent-1' : 'bg-blue-accent-1'">
                                                 <v-card-title>
-                                                    <h4>{{ device.modelo }} - {{ getStartValue().start ? 'On' : 'Off' }}
+                                                    <h4>{{ device.modelo }} - {{ device.ativo ? 'On' : 'Off' }}
                                                     </h4>
                                                 </v-card-title>
                                                 <v-card-text>
@@ -96,7 +103,7 @@
 
                                                 </v-card-text>
                                                 <v-spacer></v-spacer>
-                                                <v-card-actions class="justify-end">
+                                                <v-card-actions class="justify-end" v-if="!device.ativo">
                                                     <v-btn @click="deleteDevice(index)" v-if="!isPatient">
                                                         <v-icon color="red">mdi-trash-can</v-icon>
                                                     </v-btn>
@@ -111,8 +118,7 @@
                                 <v-row no-gutters>
                                     <v-col v-for="(sinal, index) in lastVitalValues" :key="index" cols="12" sm="3">
                                         <v-sheet class="ma-2">
-                                            <v-card
-                                                :class="getStartValue().start ? 'bg-red-accent-1' : 'bg-blue-accent-1'">
+                                            <v-card :class="sinal.ativo ? 'bg-red-accent-1' : 'bg-blue-accent-1'">
                                                 <v-card-title>
                                                     <span>{{ sinal.nome }} ({{ sinal.modelo }})</span>
                                                 </v-card-title>
@@ -138,14 +144,13 @@
                                                 <v-card-actions class="justify-end">
                                                     <v-row v-if="!isPatient">
                                                         <v-col>
-                                                            <v-btn color="red" size="small"
+                                                            <v-btn color="red" size="small" v-if="!sinal.ativo"
                                                                 @click="deleteSinal(sinal.sinal_idx, sinal.dispositivo_idx)">
                                                                 <v-icon>mdi-trash-can</v-icon>
                                                             </v-btn>
                                                         </v-col>
                                                         <v-col class="d-flex justify-end">
-                                                            <v-btn color="white" size="small"
-                                                                v-if="!getStartValue().start"
+                                                            <v-btn color="white" size="small" v-if="!sinal.ativo"
                                                                 @click="startGenerateData(patient, sinal.dispositivo_idx, sinal.sinal_idx)">
                                                                 <v-icon>mdi-led-on</v-icon> {{ $t('Turn On') }}
                                                             </v-btn>
@@ -177,22 +182,7 @@
                                             </v-btn>
                                         </v-row>
                                     </div>
-                                    <div v-if="deviceId != null">
-                                        <v-row>
-                                            <v-col cols="12" sm="3">
-                                                data inicio
-                                            </v-col>
-                                            <v-col cols="12" sm="3">
-                                                hora inicio
-                                            </v-col>
-                                            <v-col cols="12" sm="3">
-                                                data fim
-                                            </v-col>
-                                            <v-col cols="12" sm="3">
-                                                hora fim
-                                            </v-col>
-                                        </v-row>
-                                    </div>
+
                                     <div v-if="deviceId != null">
                                         <v-card height="400" style="padding: 16px;">
                                             <Line id="my-chart-id" :options="chartOptions" :data="formattedChartData" />
@@ -211,14 +201,15 @@
                                             <v-toolbar-title>{{ $t('notifications not read') }}</v-toolbar-title>
                                         </v-toolbar>
                                     </template>
-                                    <template v-slot:item="{ item }">
+                                    <template v-slot:item="{ item, index }">
                                         <tr>
                                             <td>{{ item.dispositivo }}</td>
                                             <td>{{ item.sinal }}</td>
                                             <td>{{ item.data }}</td>
                                             <td>{{ item.valor }}</td>
                                             <td v-if="!isPatient">
-                                                <v-btn color="blue" @click="read(item.idBotao)">Visto</v-btn>
+                                                <v-btn color="blue" :loading="loading[index]"
+                                                    @click="read(item.idBotao, index)">Visto</v-btn>
                                             </td>
                                         </tr>
                                     </template>
@@ -299,8 +290,8 @@ const chartOptions = {
     responsive: true
 };
 
-const getStartValue = () => {
-    return useVitalSignsStore().start?.find(value => value.patient === patient.value.sns) ?? false;
+const getStartValue = (index) => {
+    return decicesList.value[index] ? decicesList.value[index].ativo : false;
 };
 
 const router = useRouter();
@@ -312,52 +303,35 @@ const notificationsHeaders = ref([]);
 const patientSns = useRoute().params.patientSns;
 
 const patient = computed(() => {
-    if (usePatientsStore().patients.length === 0)
-        usePatientsStore().fetchPatients(useUsersStore().user.user_id);
+    const data = ref(null);
+    if (!isPatient.value) {
+        if (usePatientsStore().patients.length === 0)
+            usePatientsStore().fetchPatients(useUsersStore().user.user_id);
+        data.value = usePatientsStore().patients.find(patient => patient.sns == patientSns)
+    } else {
+        data.value = usePatientsStore().patient
+    }
 
-      
-    const data = usePatientsStore().patients.find(patient => patient.sns == patientSns)
-      /*
-    const wsArray = [];
-    data?.dispositivos.forEach((device, deviceIdx) => {
-        device.sinaisVitais.forEach((sinal, sinalIdx) => {
-            const dataTo = "_sns_" + patientSns + "_device_" + device.numeroSerie + "_sinal_" + sinalIdx;
-                wsArray.push(new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/'));
-        })
-    })
-
-    wsArray.forEach(ws => {
-        ws.onopen = () => {
-            console.log('Connected to the websocket server')
-        }
-        ws.onmessage = (event) => {
-            console.log('Received data from the websocket server')
-            // fetchPatientData();
-            // fetchNotifications();
-        }
-    })
-        */
-    
-
-
-    return data;
+    return data.value;
 });
 
 
 
 onMounted(() => {
-    if (usePatientsStore().patients.length == 0)
+    if (usePatientsStore().patients.length == 0 && !isPatient.value)
         usePatientsStore().fetchPatients(useUsersStore().user.user_id);
+    else if (isPatient.value)
+        usePatientsStore().buscarPaciente(patientSns);
 
-    const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+    const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
     ws.onopen = () => {
-        console.log('Connected to the websocket server')
+        console.log('Connected to the websocket server ---')
     }
     ws.onmessage = (event) => {
         console.log('Received data from the websocket server', event.data)
-        usePatientsStore().fetchPatients(useUsersStore().user.user_id);
-        // fetchPatientData();
-        // fetchNotifications();
+        usePatientsStore().buscarPaciente(patientSns);
+        //fetchPatientData();
+        //fetchNotifications();
     }
 
 
@@ -368,7 +342,7 @@ onMounted(() => {
         /*
         patient.value.dispositivos.forEach(device => {
             device.sinaisVitais.forEach((sinal, index) => {
-                wsArray.push(new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/sns-' + patientSns + '/device-' + device.numeroSerie + '-sinal-' + index + '/'));
+                wsArray.push(new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/sns-' + patientSns + '/device-' + device.numeroSerie + '-sinal-' + index + '/'));
                 wsArray[wsArray.length - 1].onopen = () => {
                     console.log('Connected to the websocket server')
                 }
@@ -379,7 +353,7 @@ onMounted(() => {
             });
         });
        
-        const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+        const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
         ws.onopen = () => {
             console.log('Connected to the websocket server')
         }
@@ -466,6 +440,7 @@ const lastVitalValues = computed(() => {
         return {
             dispositivo_idx: dispositivo_idx,
             sinal_idx: sinal_idx,
+            ativo: dispositivo.ativo,
             modelo: dispositivo.modelo, nome: sinal.tipo, max: sinal.maximo, min: sinal.minimo, unidade: sinal.unidade, valor: sinal.valores[sinal.valores.length - 1]
         }
     }))
@@ -496,7 +471,8 @@ const decicesList = computed(() => {
             modelo: device.modelo,
             descricao: device.descricao,
             numeroSerie: device.numeroSerie,
-            fabricante: device.fabricante
+            fabricante: device.fabricante,
+            ativo: device.ativo
         }
     });
 });
@@ -542,7 +518,7 @@ const formattedChartData = computed(() => {
         })
     }
     chartData.value.datasets.push(data);
-    chartData.value.labels = device.sinaisVitais[0].valores.slice(-30).map(entry => new Date(entry.data).toLocaleTimeString());
+    chartData.value.labels = device.sinaisVitais[sinal.value].valores.slice(-30).map(entry => new Date(entry.data).toLocaleTimeString());
 
     return chartData.value;
 
@@ -556,15 +532,16 @@ const atualizarGrafico = (index) => {
 const edit = (sns) => {
     router.push({ name: 'PatientEdit', params: { patientSns: sns } });
 };
+const loading = ref([]);
 
 const processedNotifications = computed(() => {
     return useNotificationsStore().notificationsNotRead
-        .sort((a, b) => compareDesc(new Date(a.created_at), new Date(b.created_at)))
         .map(notification => {
             let parts = notification.message.split(',');
             let dispositivoIdx = parseInt(parts[0].split(':')[1].trim());
             let sinalIdx = parseInt(parts[1].split(':')[1].trim());
             let valorIdx = parseInt(parts[2].split(':')[1].trim());
+            loading.value.push(false);
             return {
                 dispositivo: patient.value.dispositivos[dispositivoIdx]?.modelo,
                 sinal: patient.value.dispositivos[dispositivoIdx]?.sinaisVitais[sinalIdx].tipo,
@@ -592,7 +569,7 @@ const historyNotifications = computed(() => {
         });
 });
 
-const read = (_id) => {
+const read = (_id, index) => {
     useNotificationsStore().markAsRead(_id);
 };
 
@@ -654,6 +631,13 @@ const deleteDevice = async (index) => {
     } catch (error) {
         console.error(error);
     }
+};
+
+const deletePatient = async (sns) => {
+    if (!confirm('Are you sure you want to delete this patient?')) {
+        return;
+    }
+   
 };
 </script>
 

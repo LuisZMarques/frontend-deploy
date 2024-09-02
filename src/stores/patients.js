@@ -34,6 +34,8 @@ export const usePatientsStore = defineStore('patients', () => {
     const data = await response.json()
     patients.value = data
 
+    console.log('patients', patients.value)
+
     useVitalSignsStore().createStart(data)
 
     getAllAtiveDevicesAndVitalSigns()
@@ -74,7 +76,7 @@ export const usePatientsStore = defineStore('patients', () => {
     )
     if (!response.ok) {
       const data = await response.json()
-      console.log('Error updating patient', data)
+      toast.error(data.error)
       return
     }
     const data = await response.json()
@@ -95,6 +97,8 @@ export const usePatientsStore = defineStore('patients', () => {
     })
     if (!response.ok) {
       console.log('Error creating patient')
+      const data = await response.json()
+      toast.error(data.error)
       return
     }
     // get the new patient created
@@ -119,6 +123,7 @@ export const usePatientsStore = defineStore('patients', () => {
         }
       })
       const data = await response.json()
+      patient.value = data
       return data
     } catch (error) {
       console.log('Error loading patient')
