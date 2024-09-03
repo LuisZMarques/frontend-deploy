@@ -44,8 +44,9 @@
                                         @click="edit(patient?.sns)"><v-icon class="mr-2">mdi-pencil</v-icon>{{
                                             $t("Edit") }}</v-btn>
                                     <v-btn color="red" size="small" width="100px" class="mt-2"
-                                        @click="deletePatient(patient?.sns)"><v-icon class="mr-2">mdi-trash-can</v-icon>{{
-                                            $t("Delete") }}</v-btn>
+                                        @click="deletePatient(patient?.sns)"><v-icon
+                                            class="mr-2">mdi-trash-can</v-icon>{{
+                                                $t("Delete") }}</v-btn>
                                 </v-row>
                             </v-col>
                         </v-row>
@@ -66,9 +67,9 @@
                                 {{ $t('Vital Signs') }}
                             </span>
                         </v-tab>
-                        <v-tab value="estatistics" class="tab-border mr-1">
+                        <v-tab value="activeCharts" class="tab-border mr-1">
                             <span class="text-blue">
-                                {{ $t('Active Charts') }}
+                                {{ $t('activeCharts') }}
                             </span>
                         </v-tab>
                         <v-tab value="notifications" class="tab-border">
@@ -166,7 +167,7 @@
                                     </v-col>
                                 </v-row>
                             </v-window-item>
-                            <v-window-item value="estatistics">
+                            <v-window-item value="activeCharts">
                                 <div v-if="!smAndDown">
                                     <div>
                                         <v-select v-model="deviceId" :items="decicesList" item-title="nome"
@@ -239,6 +240,29 @@
                                 <MobileTable v-else :data="historyNotifications"
                                     :keys="['dispositivo', 'sinal', 'data', 'valor']"></MobileTable>
                             </v-window-item>
+
+                            <v-window-item value="historyValues">
+                                <v-row style="padding-top: 5px;">
+                                    <v-col>
+                                        <div class="text-field-container">
+                                            <input type="date" class="text-field" v-model="startDate">
+                                            <label for="nome" class="text-field-label">Start</label>
+                                            <div class="helper-text">Introduzir data de inicio</div>
+                                        </div>
+                                    </v-col>
+                                    <v-col>
+                                        <div class="text-field-container">
+                                            <input type="date" class="text-field" v-model="endDate">
+                                            <label for="nome" class="text-field-label">End</label>
+                                            <div class="helper-text">Introduzir data de fim</div>
+                                        </div>
+                                    </v-col>
+                                </v-row>
+                                <v-card elevation="11" shaped v-for="historyListValue in historyListValues">
+                                    {{ historyListValue }}<br>
+                                </v-card>
+
+                            </v-window-item>
                         </v-window>
                     </v-card-text>
                 </v-card>
@@ -248,10 +272,10 @@
 </template>
 <script setup>
 import MobileTable from '@/components/table/MobileTable.vue';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { Line } from 'vue-chartjs'
 import { useRoute, useRouter } from 'vue-router';
-import { differenceInYears } from 'date-fns';
+import { differenceInYears, min } from 'date-fns';
 import { toast } from 'vue3-toastify';
 import { format, compareDesc } from 'date-fns'
 import { useUsersStore } from '@/stores/users'
@@ -287,7 +311,12 @@ const chartOptions = {
     backgroundColor: 'rgba(75, 192, 192, 0.2)',
     borderColor: 'rgba(75, 192, 192, 1)',
     borderWidth: 1,
-    responsive: true
+    responsive: true,
+    plugins: {
+        legend: {
+            display: false
+        },
+    }
 };
 
 const getStartValue = (index) => {
@@ -352,16 +381,16 @@ onMounted(() => {
                 }
             });
         });
-       
+       */
         const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
         ws.onopen = () => {
-            console.log('Connected to the websocket server')
+            console.log('Connected to the websocket server' + patientSns)
         }
         ws.onmessage = (event) => {
             console.log('Received data from the websocket server', event.data)
-            // fetchPatientData();
+               // fetchPatientData();
             // fetchNotifications();
-        } */
+        } 
     }
     catch (error) {
         console.error('Error:', error);
@@ -369,8 +398,8 @@ onMounted(() => {
     if (router.currentRoute.value.query.notifications) {
         tab.value = 'notifications';
     }
-    if (router.currentRoute.value.query.estatistics && router.currentRoute.value.query.modelo) {
-        tab.value = 'estatistics';
+    if (router.currentRoute.value.query.activeCharts && router.currentRoute.value.query.modelo) {
+        tab.value = 'activeCharts';
         deviceId.value = decicesList.value.find(device => device.modelo === router.currentRoute.value.query.modelo);
 
     }
@@ -508,13 +537,14 @@ const formattedChartData = computed(() => {
         label: device.sinaisVitais[sinal.value].tipo + "(" + device.sinaisVitais[0].unidade + ")",
         data: device.sinaisVitais[sinal.value].valores.slice(-30).map(entry => entry.valor),
         fill: false,
-        borderColor: colors[1],
+        backgroundColor: 'blue',
+        borderColor: 'gray',
         tension: 0.5,
         pointBackgroundColor: device.sinaisVitais[sinal.value].valores.slice(-30).map(entry => {
             if (entry.valor < device.sinaisVitais[sinal.value].minimo || entry.valor > device.sinaisVitais[sinal.value].maximo) {
                 return 'red';
             }
-            return 'blue';
+            return 'black';
         })
     }
     chartData.value.datasets.push(data);
@@ -633,11 +663,75 @@ const deleteDevice = async (index) => {
     }
 };
 
+const startDate = ref(null);
+const endDate = ref(null);
+
+const dataAtual = new Date();
+const dataAtualFormatada = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate());
+
+const historyListValues = computed(() => {
+    if (startDate.value && endDate.value) {
+        return patient.value.dispositivos.filter(device => {
+            const dataFim = new Date(device.data_fim);
+            const dataFimFormatada = new Date(dataFim.getFullYear(), dataFim.getMonth(), dataFim.getDate());
+            const dataIncio = new Date(device.data_inicio);
+            const dataInicioFormatada = new Date(dataIncio.getFullYear(), dataIncio.getMonth(), dataIncio.getDate());
+
+            return dataFimFormatada < dataAtualFormatada;
+
+        }).map((dispositivo, dispositivo_idx) => dispositivo.sinaisVitais.map((sinal, sinal_idx) => {
+            return {
+                modelo: dispositivo.modelo,
+                nome: sinal.tipo,
+                start: new Date(dispositivo.data_inicio).toISOString().split('T')[0],
+                end: new Date(dispositivo.data_fim).toISOString().split('T')[0],
+                totalValores: sinal.valores.filter((valor) => {
+                    return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                }).length,
+                valorMaximo: Math.max(...sinal.valores.filter((valor) => {
+                    return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                }).map((valor) => valor.valor)),
+                valorMinimo: Math.min(...sinal.valores.filter((valor) => {
+                    return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                }).map((valor) => valor.valor)),
+            }
+        }))
+    } else {
+        console.log("sem data");
+        // devolver dispositivos com data_fim inferior a hoje
+        return patient.value.dispositivos.filter(device => {
+            const dataFim = new Date(device.data_fim);
+            const dataFimFormatada = new Date(dataFim.getFullYear(), dataFim.getMonth(), dataFim.getDate());
+
+            return dataFimFormatada < dataAtualFormatada;
+        }).map((dispositivo) => {
+
+            return {
+                start: dispositivo.data_inicio,
+                end: dispositivo.data_fim,
+                valores: dispositivo.sinaisVitais.map((sinal) => {
+                    return {
+                        max: sinal.maximo,
+                        min: sinal.minimo,
+                        totalValores: sinal.valores.length,
+                        valorMaximo: Math.max(...sinal.valores.map((valor) => valor.valor)),
+                        valorMinimo: Math.min(...sinal.valores.map((valor) => valor.valor)),
+
+                    }
+                })
+            }
+        });
+    }
+
+});
+
+
+
 const deletePatient = async (sns) => {
     if (!confirm('Are you sure you want to delete this patient?')) {
         return;
     }
-   
+
 };
 </script>
 
@@ -648,5 +742,54 @@ const deletePatient = async (sns) => {
 
 .patient-card {
     width: 100%;
+}
+
+.text-field-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.text-field {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+}
+
+.text-field:focus {
+    border-color: #6200ea;
+    /* Cor do foco */
+    box-shadow: 0 0 5px rgba(98, 0, 234, 0.5);
+    /* Sombra roxa ao focar */
+}
+
+.text-field-label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    background-color: white;
+    padding: 0 4px;
+    color: #999;
+    transition: all 0.3s;
+    pointer-events: none;
+    font-size: 16px;
+}
+
+.text-field:focus+.text-field-label,
+.text-field:not(:placeholder-shown)+.text-field-label {
+    top: 0;
+    transform: translateY(-50%) scale(0.8);
+    color: #6200ea;
+    /* Cor do rótulo ao focar */
+}
+
+.helper-text {
+    font-size: 12px;
+    color: #777;
+    margin-top: 4px;
 }
 </style>

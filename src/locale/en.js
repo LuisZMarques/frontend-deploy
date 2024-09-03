@@ -128,8 +128,12 @@ const en = {
     'A data de início deve ser igual ou superior à data de hoje.': 'The start date must be equal to or greater than today.',
     'Email enviado com sucesso.': 'Email sent successfully.',
     'Histórico de Notificações': 'Notifications History',
-    'Gráficos Ativos': 'Active Charts',
+    'activeCharts': 'Active Charts',
     'Histórico de Valores': 'Values History',
+    'email': 'Email',
+    "forgotPassword": 'Forgot your password? Click here.',
+    "RolesListing": 'Roles Listing',
+    "Search for roles": 'Search for roles',
   };
 
 export default en;
