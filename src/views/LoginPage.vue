@@ -21,7 +21,7 @@
     <p>Login:</p>
     <p> - medico@gmail.com/medico123</p>
     <p> - admin@gmail.com/admin123</p>
-    <p> - paciente@gmail.com/paciente123</p>
+    <p> - fohotow944@rogtat.com/paciente123</p>
   </v-container>
 </template>
 
