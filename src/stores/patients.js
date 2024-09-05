@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import { useVitalSignsStore } from './vitalSigns'
 import { toast } from 'vue3-toastify'
 import { useUsersStore } from './users'
+import { useLoaderStore } from '@/stores/loader'
+
 import router from '@/router'
 
 export const usePatientsStore = defineStore('patients', () => {
@@ -13,8 +15,11 @@ export const usePatientsStore = defineStore('patients', () => {
   const vitalSigns = ref([])
   const vitalSignActive = ref([])
   const token = useUsersStore().token
+  const loaderStore = useLoaderStore()
+
 
   const fetchPatients = async (user_id) => {
+    loaderStore.setLoading(true)
     const response = await fetch(
       window.URL + '/api/patients/listar_documentos_com_profissionais/' + user_id + '/',
       {
@@ -30,9 +35,8 @@ export const usePatientsStore = defineStore('patients', () => {
       return
     }
     const data = await response.json()
+    loaderStore.setLoading(false)
     patients.value = data
-
-    console.log('patients', patients.value)
 
     useVitalSignsStore().createStart(data)
 
@@ -66,6 +70,7 @@ export const usePatientsStore = defineStore('patients', () => {
   }
 
   const atualizarPaciente = async (patient) => {
+    loaderStore.setLoading(true)
     const response = await fetch(
       window.URL + '/api/documentos/atualizar_dados_paciente_por_sns/' + patient.sns + '/',
       {
@@ -83,6 +88,7 @@ export const usePatientsStore = defineStore('patients', () => {
       return
     }
     const data = await response.json()
+    loaderStore.setLoading(false)
     // update patient in patients
     const index = patients.value.findIndex((p) => p.sns === data.data.sns)
     patients.value[index] = data.data
@@ -90,6 +96,7 @@ export const usePatientsStore = defineStore('patients', () => {
   }
 
   const criarPaciente = async (patient) => {
+    loaderStore.setLoading(true)
     const response = await fetch(window.URL + '/api/documentos/', {
       method: 'POST',
       headers: {
@@ -106,6 +113,7 @@ export const usePatientsStore = defineStore('patients', () => {
     }
     // get the new patient created
     const data = await buscarPaciente(patient.sns)
+    loaderStore.setLoading(false)
     patients.value.push(data)
     toast.success('Patient created successfully')
     router.push({ name: 'PatientsListing' })
@@ -118,6 +126,7 @@ export const usePatientsStore = defineStore('patients', () => {
 
   const buscarPaciente = async (sns) => {
     try {
+      loaderStore.setLoading(true)
       const response = await fetch(window.URL + '/api/documentos/buscar_por_sns/' + sns + '/', {
         method: 'GET',
         headers: {
@@ -126,6 +135,7 @@ export const usePatientsStore = defineStore('patients', () => {
         }
       })
       const data = await response.json()
+      loaderStore.setLoading(false)
       patient.value = data
       return data
     } catch (error) {

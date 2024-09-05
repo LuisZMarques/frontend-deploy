@@ -4,7 +4,7 @@
             <v-row>
                 <v-col :class="['d-flex justify-start', {'justify-center': smAndDown}]" cols="12" sm="4">
                     <v-btn color="indigo-darken-3" @click="voltarPainel"><v-icon class="mr-2">mdi-home</v-icon>{{
-                        $t('dashboard') }}</v-btn>
+                        $t('Dashboard') }}</v-btn>
                 </v-col>
                 <v-col class="text-h4 text-center font-weight-bold text-deep-purple-darken-4" cols="12" sm="4">{{
                     $t('UsersListing')
@@ -57,7 +57,7 @@
                     </template>
                 </v-data-table>
 
-                <MobileTable v-else class="justify-center" :data="users" :keys="['id', 'username', 'email', 'is_active', 'actions']"
+                <MobileTable v-else class="justify-center" :data="users" :keys="['id', 'name', 'email', 'active', 'actions']"
                     :isUser="true">
                 </MobileTable>
             </v-row>
@@ -104,6 +104,9 @@ onMounted(async () => {
     } else {
         users.value = useUsersStore().users;
     }
+    users.value = users.value.map(user => {
+        return {...user, name: user.full_name, active: user.is_active}
+    })
     loaderStore.setLoading(false);
 });
 

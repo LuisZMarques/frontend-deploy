@@ -18,10 +18,6 @@
         </div>
       </v-col>
     </v-row>
-    <p>Login:</p>
-    <p> - medico@gmail.com/medico123</p>
-    <p> - admin@gmail.com/admin123</p>
-    <p> - paciente@gmail.com/paciente123</p>
   </v-container>
 </template>
 
@@ -30,12 +26,13 @@ import { ref } from 'vue'
 import { useUsersStore } from '@/stores/users'
 import { useRouter } from 'vue-router';
 import { toast } from 'vue3-toastify';
-
+import { useLoaderStore } from '@/stores/loader'
 
 const router = useRouter();
 const usersStore = useUsersStore()
 const showPassword = ref(false);
 const passwordType = ref('password');
+const loaderStore = useLoaderStore()
 
 const email = ref('admin@gmail.com');
 const password = ref('admin123');
@@ -50,6 +47,7 @@ const toggleShowPassword = () => {
 }
 
 const logIn = () => {
+  loaderStore.setLoading(true);
   usersStore.logIn(email.value, password.value)
     .then(() => {
       usersStore.isAdmin ? router.push({ name: 'HomeAdmin' }) :
@@ -58,6 +56,7 @@ const logIn = () => {
     .catch((error) => {
       toast.error(error.response.data.message);
     });
+  loaderStore.setLoading(false);
 
 }
 

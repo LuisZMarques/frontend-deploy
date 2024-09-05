@@ -43,29 +43,9 @@ console.log(location)
 onMounted(() => {
   if (user) {
     try {
-      const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/notify/room' + user.user_id + '/')
+      const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/notify/room' + user.user_id + '/')
       ws.onopen = () => {
 
-        ws.onopen = () => {
-            console.log("Connected to the websocket server");
-        };
-
-        ws.onerror = (error) => {
-            console.error("WebSocket encountered an error:", error);
-        };
-
-        ws.onmessage = (r) => {
-            try {
-                const u = JSON.parse(r.data);
-                De.error(n("PatientWarning", u), {
-                    onClick: () => {
-                        o(u.sns);
-                    }
-                });
-            } catch (jsonError) {
-                console.error("Error parsing WebSocket message data:", jsonError);
-            }
-        };
         console.log('Connected to the websocket server')
 
       }

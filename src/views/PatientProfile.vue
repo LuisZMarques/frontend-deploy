@@ -168,7 +168,7 @@
                                 </v-row>
                             </v-window-item>
                             <v-window-item value="activeCharts">
-                                <div v-if="!smAndDown">
+                                <div>
                                     <div>
                                         <v-select v-model="deviceId" :items="getDeviceActives" item-title="nome"
                                             item-value="id" :label="$t('Choose a Device')" return-object>
@@ -178,21 +178,18 @@
                                         <v-row>
                                             <v-btn v-for="(sinalVital, index) in sinaisVitais"
                                                 :color="sinal == index ? 'green' : 'primary'" class="ma-2" :key="index"
-                                                @click="atualizarGrafico(index)" >{{
+                                                :disabled="!sinalVital.ativo" @click="atualizarGrafico(index)">{{
                                                     sinalVital.nome }}
-                                                
+
                                             </v-btn>
                                         </v-row>
                                     </div>
 
-                                    <div v-if="deviceId != null " >
-                                        <v-card height="400" style="padding: 16px;" >
+                                    <div v-if="deviceId != null">
+                                        <v-card height="400" style="padding: 16px;">
                                             <Line id="my-chart-id" :options="chartOptions" :data="formattedChartData" />
                                         </v-card>
                                     </div>
-                                </div>
-                                <div v-else>
-                                    <p class="text-center text-h5">{{ $t('OnlyDesktop') }}</p>
                                 </div>
                             </v-window-item>
                             <v-window-item value="notifications">
@@ -211,14 +208,14 @@
                                             <td>{{ item.valor }}</td>
                                             <td v-if="!isPatient">
                                                 <v-btn color="blue" :loading="loading[index]"
-                                                    @click="read(item.idBotao, index)">Visto</v-btn>
+                                                    @click="read(item.botao, index)">Visto</v-btn>
                                             </td>
                                         </tr>
                                     </template>
 
                                 </v-data-table>
                                 <MobileTable v-else :data="processedNotifications"
-                                    :keys="['dispositivo', 'sinal', 'data', 'valor', 'idBotao']">
+                                    :keys="['dispositivo', 'sinal', 'data', 'valor', 'botao']">
                                 </MobileTable>
                             </v-window-item>
 
@@ -259,8 +256,40 @@
                                         </div>
                                     </v-col>
                                 </v-row>
-                                <v-card elevation="11" shaped v-for="historyListValue in historyListValues">
-                                    {{ historyListValue }}<br>
+                                <v-card elevation="11" shaped v-for="(historyListValue, index) in historyListValues" :key="`history${index}`">
+                                    <v-data-table :items="historyListValue.valores" :items-per-page="5" class="elevation-1"
+                                        v-if="!smAndDown">
+                                        <template v-slot:top>
+                                            <v-toolbar flat>
+                                                <v-toolbar-title>{{ $t('Values History') }} de {{ historyListValue.start
+                                                    }} a {{ historyListValue.end }}; {{ $t('Model') }}: {{ historyListValue.modelo
+                                                    }} </v-toolbar-title>
+                                            </v-toolbar>
+                                        </template>
+                                        <template v-slot:item="{ item }">
+                                            <tr>
+                                                <td>{{ item['sinal vital'] }}</td>
+                                                <td>{{ item['total Valores'] }}</td>
+                                                <td>{{ item['limite superior'] }}</td>
+                                                <td>{{ item['limite inferior'] }}</td>
+                                                <td>{{ item['valor Maximo'] == '-Infinity' ?  'Sem dados' : item['valor Maximo'] }}</td>
+                                                <td>{{ item['valor Minimo'] == 'Infinity' ? 'Sem dados' :  item['valor Minimo']}}</td>
+                                                
+                                                <td>{{ item['total de alertas'] }}</td>
+                                            </tr>
+                                        </template>
+
+                                    </v-data-table>
+                                    <div v-else>
+                                        <div class="d-flex flex-column justify-center align-center">
+                                            <h2 class="ma-1">{{ $t('Values History') }}</h2>
+                                             <span class="ma-1"><strong>{{ $t('Model') }}:</strong> {{ historyListValue.modelo }}</span>
+                                            <span class="ma-1"><strong>{{ $t('Dates') }}:</strong> {{ historyListValue.start}} a {{ historyListValue.end }} </span>
+                                        </div>
+                                        <MobileTable  :data="historyListValue.valores"
+                                            :keys="['sinal vital', 'total Valores', 'limite superior', 'limite inferior', 'valor Maximo', 'valor Minimo', 'total de alertas']">
+                                        </MobileTable>
+                                    </div>
                                 </v-card>
 
                             </v-window-item>
@@ -337,7 +366,7 @@ const patient = computed(() => {
     const data = ref(null);
     if (!isPatient.value) {
         if (usePatientsStore().patients.length === 0)
-            usePatientsStore().fetchPatients(useUsersStore().user.user_id);
+            usePatientsStore().fetchPatients(useUsersStore().user?.user_id);
         data.value = usePatientsStore().patients.find(patient => patient.sns == patientSns)
     } else {
         data.value = usePatientsStore().patient
@@ -354,7 +383,7 @@ onMounted(() => {
     else if (isPatient.value)
         usePatientsStore().buscarPaciente(patientSns);
 
-    const ws = new WebSocket('wss://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
+    const ws = new WebSocket('ws://' + useLoaderStore().url + '/ws/pacient/room' + patientSns + '/');
     ws.onopen = () => {
         console.log('Connected to the websocket server ---')
     }
@@ -392,7 +421,7 @@ const isPatient = computed(() => {
             { title: 'Sinal', key: 'sinal' },
             { title: 'Data', key: 'data' },
             { title: 'Valor', key: 'valor' },
-            { title: 'Actions', key: 'idBotao', sortable: false }
+            { title: 'Actions', key: 'botao', sortable: false }
         ]
     }
     return useUsersStore().user?.groups.includes('paciente') ? true : false
@@ -417,7 +446,7 @@ const stopGeneratingData = (patient, indexSinal, index) => {
     )
 }
 
-const sinal = ref(0);
+const sinal = ref(null);
 
 const voltar = () => {
     router.go(-1);
@@ -429,14 +458,14 @@ const tab = ref(null);
 
 const deviceId = ref(null);
 
-const hasValues =  computed(() => {
+const hasValues = computed(() => {
     if (!deviceId.value) {
         return false;
     }
     return patient.value.dispositivos.find(device => device.numeroSerie === deviceId.value.numeroSerie).sinaisVitais.map(sinal => {
         if (sinal.valores.length > 0) {
             return true;
-        }else{
+        } else {
             return false;
         }
     });
@@ -446,11 +475,27 @@ const sinaisVitais = computed(() => {
     if (!deviceId.value) {
         return [];
     }
-    return patient.value.dispositivos.find(device => device.numeroSerie === deviceId.value.numeroSerie).sinaisVitais.map(sinal => {
-        return { 
+
+    const sinaisVitais = patient.value.dispositivos.find(device => device.numeroSerie === deviceId.value.numeroSerie).sinaisVitais;
+    // get the index of the vital signal in the device active
+    const fistActive = sinaisVitais.findIndex(sinal => sinal.ativo);
+
+    if (fistActive === -1) {
+        return sinaisVitais.map(sinal => {
+            return {
+                nome: sinal.tipo,
+                ativo: sinal.ativo
+            }
+        });
+    }
+    else {
+        sinal.value = fistActive;
+    }
+    return sinaisVitais.map(sinal => {
+        return {
             nome: sinal.tipo,
-            hasValues: sinal.valores.length > 0
-         }
+            ativo: sinal.ativo
+        }
     });
 });
 
@@ -522,7 +567,6 @@ const formattedChartData = computed(() => {
     if (!device) {
         return chartData.value;
     }
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'gray', 'black'];
     const data = {
         label: device.sinaisVitais[sinal.value].tipo + "(" + device.sinaisVitais[0].unidade + ")",
         data: device.sinaisVitais[sinal.value].valores.slice(-30).map(entry => entry.valor),
@@ -562,11 +606,11 @@ const processedNotifications = computed(() => {
             let valorIdx = parseInt(parts[2].split(':')[1].trim());
             loading.value.push(false);
             return {
-                dispositivo: patient.value.dispositivos[dispositivoIdx]?.modelo,
-                sinal: patient.value.dispositivos[dispositivoIdx]?.sinaisVitais[sinalIdx].tipo,
+                dispositivo: patient.value?.dispositivos[dispositivoIdx]?.modelo,
+                sinal: patient.value?.dispositivos[dispositivoIdx]?.sinaisVitais[sinalIdx].tipo,
                 data: format(new Date(notification.created_at), 'dd-MM-yyyy - HH:mm:ss'),
-                valor: patient.value.dispositivos[dispositivoIdx]?.sinaisVitais[sinalIdx]?.valores[valorIdx]?.valor,
-                idBotao: notification._id
+                valor: patient.value?.dispositivos[dispositivoIdx]?.sinaisVitais[sinalIdx]?.valores[valorIdx]?.valor,
+                botao: notification._id
             };
         });
 });
@@ -597,6 +641,7 @@ const deleteSinal = async (sinal_idx, dispositivo_idx) => {
     if (!confirm('Are you sure you want to delete this signal?')) {
         return;
     }
+    loaderStore.setLoading(true);
     try {
         const sns = patient.value.sns;
         const response = await fetch(window.URL + '/api/documentos/delete_sinal_vital/' + sns + '/', {
@@ -620,6 +665,8 @@ const deleteSinal = async (sinal_idx, dispositivo_idx) => {
         }
     } catch (error) {
         console.error(error);
+    }finally {
+        loaderStore.setLoading(false);
     }
 };
 
@@ -627,6 +674,7 @@ const deleteDevice = async (index) => {
     if (!confirm('Are you sure you want to delete this device?')) {
         return;
     }
+    loaderStore.setLoading(true);
     try {
         const sns = patient.value.sns;
         const response = await fetch(window.URL + '/api/documentos/delete_device/' + sns + '/', {
@@ -649,6 +697,8 @@ const deleteDevice = async (index) => {
         }
     } catch (error) {
         console.error(error);
+    } finally {
+        loaderStore.setLoading(false);
     }
 };
 
@@ -659,52 +709,59 @@ const dataAtual = new Date();
 const dataAtualFormatada = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate());
 
 const historyListValues = computed(() => {
+
+    const dispositivos = patient.value.dispositivos;
     if (startDate.value && endDate.value) {
-        return patient.value.dispositivos.filter(device => {
-            const dataFim = new Date(device.data_fim);
-            const dataFimFormatada = new Date(dataFim.getFullYear(), dataFim.getMonth(), dataFim.getDate());
-            const dataIncio = new Date(device.data_inicio);
-            const dataInicioFormatada = new Date(dataIncio.getFullYear(), dataIncio.getMonth(), dataIncio.getDate());
 
-            return dataFimFormatada < dataAtualFormatada;
-
-        }).map((dispositivo, dispositivo_idx) => dispositivo.sinaisVitais.map((sinal, sinal_idx) => {
+        if (new Date(startDate.value) > new Date(endDate.value || dataAtualFormatada > new Date(startDate.value) || dataAtualFormatada > new Date(endDate.value))) {
+            return [];
+        }
+        return dispositivos.map((dispositivo) => {
             return {
-                modelo: dispositivo.modelo,
-                nome: sinal.tipo,
                 start: new Date(dispositivo.data_inicio).toISOString().split('T')[0],
                 end: new Date(dispositivo.data_fim).toISOString().split('T')[0],
-                totalValores: sinal.valores.filter((valor) => {
-                    return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
-                }).length,
-                valorMaximo: Math.max(...sinal.valores.filter((valor) => {
-                    return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
-                }).map((valor) => valor.valor)),
-                valorMinimo: Math.min(...sinal.valores.filter((valor) => {
-                    return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
-                }).map((valor) => valor.valor)),
-            }
-        }))
-    } else {
-        console.log("sem data");
-        // devolver dispositivos com data_fim inferior a hoje
-        return patient.value.dispositivos.filter(device => {
-            const dataFim = new Date(device.data_fim);
-            const dataFimFormatada = new Date(dataFim.getFullYear(), dataFim.getMonth(), dataFim.getDate());
-
-            return dataFimFormatada < dataAtualFormatada;
-        }).map((dispositivo) => {
-
-            return {
-                start: dispositivo.data_inicio,
-                end: dispositivo.data_fim,
+                modelo: dispositivo.modelo,
                 valores: dispositivo.sinaisVitais.map((sinal) => {
                     return {
-                        max: sinal.maximo,
-                        min: sinal.minimo,
-                        totalValores: sinal.valores.length,
-                        valorMaximo: Math.max(...sinal.valores.map((valor) => valor.valor)),
-                        valorMinimo: Math.min(...sinal.valores.map((valor) => valor.valor)),
+                        "sinal vital": sinal.tipo,
+                        "total Valores": sinal.valores.filter((valor) => {
+                            return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                        }).length,
+                        'limite superior': sinal.maximo,
+                        'limite inferior': sinal.minimo,
+                        "valor Maximo": Math.max(...sinal.valores.filter((valor) => {
+                            return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                        }).map((valor) => valor.valor)),
+                        "valor Minimo": Math.min(...sinal.valores.filter((valor) => {
+                            return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                        }).map((valor) => valor.valor)),
+                        "total de alertas": sinal.valores.filter((valor) => {
+                            return new Date(valor.data) >= new Date(startDate.value) && new Date(valor.data) <= new Date(endDate.value);
+                        }).filter((valor) => {
+                            return valor.valor < sinal.minimo || valor.valor > sinal.maximo;
+                        }).length
+
+                    }
+                })
+            }
+        });
+    } else {
+        return dispositivos.map((dispositivo) => {
+            return {
+                start: new Date(dispositivo.data_inicio).toISOString().split('T')[0],
+                end: new Date(dispositivo.data_fim).toISOString().split('T')[0],
+                modelo: dispositivo.modelo,
+                valores: dispositivo.sinaisVitais.map((sinal) => {
+                    return {
+                        "sinal vital": sinal.tipo,
+                        "total Valores": sinal.valores.length,
+                        'limite superior': sinal.maximo,
+                        'limite inferior': sinal.minimo,
+                        "valor Maximo": Math.max(...sinal.valores.map((valor) => valor.valor)),
+                        "valor Minimo": Math.min(...sinal.valores.map((valor) => valor.valor)),
+                        "total de alertas": sinal.valores.filter((valor) => {
+                            return valor.valor < sinal.minimo || valor.valor > sinal.maximo;
+                        }).length
 
                     }
                 })
@@ -712,8 +769,8 @@ const historyListValues = computed(() => {
         });
     }
 
-});
 
+});
 
 
 const deletePatient = async (sns) => {
@@ -725,6 +782,10 @@ const deletePatient = async (sns) => {
 </script>
 
 <style scoped>
+tbody tr:nth-of-type(odd) {
+  background-color: rgba(0, 0, 0, .05);
+}
+
 .tab-border {
     border-bottom: 1px solid #ccc;
 }

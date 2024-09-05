@@ -10,8 +10,8 @@
                 </div>
 
                 <!-- Direita -->
-                <v-col class="d-flex justify-center" v-if="key === 'idBotao'">
-                    <v-btn color="blue" size="small" @click="read(item.id)">Visto</v-btn>
+                <v-col class="d-flex justify-center" v-if="key === 'botao'">
+                    <v-btn color="blue" size="small" @click="read(item.botao)">Visto</v-btn>
                 </v-col>
                 <v-col class="d-flex justify-center" v-else-if="key==='is_active'"> 
                     <v-icon v-if="item.is_active" class="green">mdi-check-circle</v-icon>
@@ -20,6 +20,9 @@
                 <v-col class="d-flex justify-center" v-else-if="key==='actions'"> 
                     <v-btn v-if="isUser" color="blue" size="small" @click="editUser(item)">{{ $t('EditUser') }}</v-btn>
                 </v-col>
+                <v-col class="d-flex justify-center" v-else-if="key==='Actions'"> 
+                    <v-icon small @click="editRole(item)">mdi-pencil</v-icon>
+                </v-col>
                 <v-col class="d-flex justify-center" style="line-break: anywhere;" v-else> 
                     <p>{{ item[key] }}</p>
                 </v-col>
@@ -27,7 +30,7 @@
         </v-list-item>
     </v-list>
     <v-pagination
-      v-model:page="currentPage"
+      v-model="currentPage"
       :length="totalPages"
       circle
     ></v-pagination>
@@ -36,9 +39,16 @@
 <script setup>
 import {ref,computed} from 'vue'
 import router from '@/router';
+import { useNotificationsStore } from '@/stores/notifications'
 
 
 const props = defineProps(['data', 'keys', 'isUser'])
+
+const emit = defineEmits(['roleEdit'])
+
+const editRole = (item) => {
+    emit('roleEdit', item)
+}
 
 const itemsPerPage = ref(5);
 const currentPage = ref(1);
@@ -50,7 +60,8 @@ const totalPages = computed(() => {
 const paginatedData = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value;
     const end = start + itemsPerPage.value;
-    return props.data.slice(start, end);
+    const aux = props.data.slice(start, end);
+    return aux;
 });
 
 function capitalizeFirstLetter(string) {
@@ -63,6 +74,10 @@ function capitalizeFirstLetter(string) {
 const editUser = (item) => {
     router.push({ name: 'EditUser', params: { id: item.id } })
 }
+
+const read = (id) => {
+    useNotificationsStore().markAsRead(id);
+};
 
 </script>
 
