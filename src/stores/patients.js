@@ -17,7 +17,6 @@ export const usePatientsStore = defineStore('patients', () => {
   const token = useUsersStore().token
   const loaderStore = useLoaderStore()
 
-
   const fetchPatients = async (user_id) => {
     loaderStore.setLoading(true)
     const response = await fetch(
@@ -89,7 +88,6 @@ export const usePatientsStore = defineStore('patients', () => {
     }
     const data = await response.json()
     loaderStore.setLoading(false)
-    // update patient in patients
     const index = patients.value.findIndex((p) => p.sns === data.data.sns)
     patients.value[index] = data.data
     toast.success('Patient updated successfully')

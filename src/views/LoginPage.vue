@@ -18,6 +18,7 @@
         </div>
       </v-col>
     </v-row>
+
   </v-container>
 </template>
 
@@ -34,8 +35,8 @@ const showPassword = ref(false);
 const passwordType = ref('password');
 const loaderStore = useLoaderStore()
 
-const email = ref('admin@gmail.com');
-const password = ref('admin123');
+const email = ref('medico@gmail.com');
+const password = ref('medico123');
 
 const toggleShowPassword = () => {
   showPassword.value = !showPassword.value
